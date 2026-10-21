@@ -88,13 +88,13 @@ echo "::group::${file} -> ${image}"
 trap 'echo "::endgroup::"' EXIT
 
 annotations=(
-    --annotation "org.opencontainers.image.title=${title}"
-    --annotation "org.opencontainers.image.description=${description}"
-    --annotation "org.opencontainers.image.version=${component_version}"
-    --annotation "org.opencontainers.image.url=${url}"
-    --annotation "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}.git"
-    --annotation "org.opencontainers.image.revision=${revision}"
-    --annotation "org.opencontainers.image.licenses=Apache-2.0"
+    --annotation="org.opencontainers.image.title=${title}"
+    --annotation="org.opencontainers.image.description=${description}"
+    --annotation="org.opencontainers.image.version=${component_version}"
+    --annotation="org.opencontainers.image.url=${url}"
+    --annotation="org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}.git"
+    --annotation="org.opencontainers.image.revision=${revision}"
+    --annotation="org.opencontainers.image.licenses=Apache-2.0"
 )
 
 if [[ "$DRY_RUN" == true ]]; then
