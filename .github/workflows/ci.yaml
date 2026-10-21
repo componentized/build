@@ -119,6 +119,11 @@ jobs:
             target: aarch64-pc-windows-msvc
     # each runner builds for its own platform, linux builds are static with musl
     runs-on: ${{ matrix.os }}
+    # bash on windows too, where pwsh is the default, the steps read CLI_BIN from the environment. The
+    # windows packaging steps are pwsh, reading it as `${env:CLI_BIN}`.
+    defaults:
+      run:
+        shell: bash
     env:
       CLI_BIN: ${{ needs.settings.outputs.cli }}
     steps:
@@ -154,7 +159,6 @@ jobs:
       - name: Smoke test cli
         # the repository's scripts/smoke-test-cli.sh runs the unpacked cli, given its path and a
         # directory for its files
-        shell: bash
         run: |
           if [ ! -f scripts/smoke-test-cli.sh ] ; then
             echo "::warning::no scripts/smoke-test-cli.sh to smoke test ${CLI_BIN}"
