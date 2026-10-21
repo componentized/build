@@ -1,4 +1,4 @@
-package componentized:build@0.1.0;
+package componentized:build@0.1.1-dev;
 
 world imports {
     import greeter;

@@ -7,7 +7,7 @@ let defaults = new local:defaults {};
 
 let greeter = new local:greeter {
     "wasi:logging/logging@0.1.0-draft": logging["wasi:logging/logging@0.1.0-draft"],
-    "componentized:build/defaults@0.1.0": defaults["componentized:build/defaults@0.1.0"],
+    "componentized:build/defaults@0.1.1-dev": defaults["componentized:build/defaults@0.1.1-dev"],
 };
 
-export greeter["componentized:build/greeter@0.1.0"];
+export greeter["componentized:build/greeter@0.1.1-dev"];
