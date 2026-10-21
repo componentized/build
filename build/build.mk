@@ -36,23 +36,36 @@ include build/publish.mk
 include build/sync.mk
 
 
-.PHONY: all
+.PHONY: all ## Install the tools, generate, build the components and test them, `make` without a target
 all: tools generate components test
+
+# the help of a target follows `## ` on its .PHONY line, e.g. `.PHONY: tools ## Install the tools`, or
+# on the line of its rule, e.g. `run: cli.wasm ## Run the cli`. A variable's line, with an `=`, is not
+# a target.
+.PHONY: help ## Display this help screen
+help:
+	@awk '/^[^#[:space:]][^=]*:[^=]*## / { \
+		names = substr($$0, 1, index($$0, "## ") - 1); \
+		if (sub(/^\.PHONY:/, "", names) == 0) sub(/:.*$$/, "", names); \
+		text = substr($$0, index($$0, "## ") + 3); \
+		count = split(names, list, /[[:space:]]+/); \
+		for (i = 1; i <= count; i++) if (list[i] != "" && !(list[i] in seen)) { seen[list[i]] = 1; printf "\033[36m%-20s\033[0m %s\n", list[i], text } \
+	}' $(MAKEFILE_LIST) | sort
 
 # the repository adds what else it generates and commits as prerequisites, e.g. `generate: config`
 .PHONY: generate ## Generate the files committed with the sources, the CI workflow fails when they drift
 generate: wit
 	@:
 
-.PHONY: clean
+.PHONY: clean ## Remove the built components and the fetched wit dependencies
 clean: clean-components clean-wit
 	@:
 
-.PHONY: clean-all
+.PHONY: clean-all ## Remove everything built, the installed tools and cargo's target directory too
 clean-all: clean-components clean-tools clean-wit
 	cargo clean
 
-.PHONY: test
+.PHONY: test ## Build the components and run the tests of the workspace
 test: components
 	cargo test --workspace
 

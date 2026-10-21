@@ -33,7 +33,7 @@ RUST_TOOLCHAIN := $(shell sed -n 's/^channel *= *"\(.*\)"/\1/p' rust-toolchain.t
 # cargo binstall downloads prebuilt binaries, without it the tools are built with cargo install
 CARGO_INSTALL := $(if $(shell command -v cargo-binstall 2> /dev/null),cargo binstall --no-confirm --disable-telemetry,cargo install)
 
-.PHONY: clean-tools
+.PHONY: clean-tools ## Remove the installed tools, installed again by `make tools`
 clean-tools:
 	rm -rf ${TOOLS_DIR}
 

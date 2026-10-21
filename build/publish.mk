@@ -10,7 +10,7 @@ PUBLISH_LOG ?=
 # other components, `internal-`, or tests, `test-`.
 PUBLISH_FILES := interface.wasm $(foreach component,$(filter-out dep-% internal-% test-%,$(COMPONENTS)),$(component).wasm $(component).debug.wasm)
 
-.PHONY: publish ## Publish each component in the target/components directory
+.PHONY: publish ## Publish each component in the target/components directory, `make publish-<file>` publishes one, e.g. publish-gate.wasm
 publish: $(addprefix publish-,$(PUBLISH_FILES))
 
 .PHONY: $(addprefix publish-,$(PUBLISH_FILES))

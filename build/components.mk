@@ -45,11 +45,11 @@ COMPONENT_OPTIMIZE ?= $(if $(filter wasm-opt,$(TOOLS)),$(filter-out wasm32-wasip
 # limited to these so it doesn't introduce instructions rust wouldn't emit.
 WASM_OPT_FEATURES ?= --enable-bulk-memory --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext
 
-.PHONY: clean-components
+.PHONY: clean-components ## Remove the built components
 clean-components: clean-wit
 	rm -rf ${COMPONENTS_DIR} ${WAC_DEPS_DIR}
 
-.PHONY: components
+.PHONY: components ## Build the interface and each component into target/components, `make components/<name>` builds one
 components: ${COMPONENTS_DIR}/interface.wasm $(foreach component,$(COMPONENTS),${COMPONENTS_DIR}/$(component)/$(component).wasm ${COMPONENTS_DIR}/$(component)/$(component).debug.wasm)
 
 define BUILD_COMPONENT
