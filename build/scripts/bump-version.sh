@@ -9,7 +9,8 @@
 # workspace version the crates inherit, and the workspace's requirements on its own crates that name
 # a version, e.g. `componentized-constants = { path = "./crates/componentized-constants", version =
 # "=0.2.1-dev" }`, move to the new version too. A repository without a workspace version only bumps the
-# interface. Items whose `@since` names an unreleased (prerelease)
+# interface. The default version of the bump-version workflow moves to the new version, the next bump
+# is offered from it. Items whose `@since` names an unreleased (prerelease)
 # version move to the new version, since they were never published under the old one. Items
 # released under the old version keep their `@since`.
 #
@@ -64,6 +65,15 @@ if ! version_lt "$old" "$new"; then
 fi
 
 old_re="${old//./\\.}"
+
+# the bump-version workflow offers the current version as the default for the next bump, checked
+# before changing anything
+workflow=.github/workflows/bump-version.yaml
+workflow_default="default: \"${old}\" # the current version, kept current by build/scripts/bump-version.sh"
+if ! grep -qF "$workflow_default" "$workflow"; then
+    echo "unable to find the current version as the default in ${workflow}, expected: ${workflow_default}" >&2
+    exit 1
+fi
 
 # the version in the [workspace.package] section, inherited by the crates
 workspace_version=$(sed -n '/^\[workspace\.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' Cargo.toml 2> /dev/null || true)
@@ -120,6 +130,9 @@ if [[ -n "$workspace_version" ]]; then
         echo "updated the ${crate} requirement in Cargo.toml"
     done
 fi
+
+perl -pi -e 's{^(\s+)\Q'"${workflow_default}"'\E$}{${1}'"${workflow_default/\"${old}\"/\"${new}\"}"'}' "$workflow"
+echo "updated the default version in ${workflow}"
 
 # regenerate the wit dependencies for the new version
 make generate components test

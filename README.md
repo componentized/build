@@ -76,7 +76,7 @@ A repository extends a target by adding prerequisites after the include, make me
 5. Add `wkg.lock.orig` to `.gitignore`.
 6. Check `make` and `make check-build` pass.
 
-The `bump-version` workflow no longer has a default version, which changed with every bump. An empty version releases the current pre-release, e.g. 0.2.0 for 0.2.0-dev.
+The default version of the `bump-version` workflow, the repository's current version, is the one line of a synced file the repository keeps: `make update-build` carries it forward, from the workflow of the previous build too, or starts it at the interface version, and `make check-build` leaves it out. `build/scripts/bump-version.sh` updates it with each bump.
 
 ## This repository builds with the build
 

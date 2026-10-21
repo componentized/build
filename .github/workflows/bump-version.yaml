@@ -4,10 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        # the current version can't be the default, this workflow is synced from componentized/build
-        description: The new version of the interface package and crates, e.g. 0.1.0 or 0.2.0-dev. Empty releases the current pre-release, e.g. 0.2.0 for 0.2.0-dev.
-        required: false
+        description: The new version of the interface package and crates, e.g. 0.1.0 or 0.2.0-dev
+        required: true
         type: string
+        # the repository's own version, carried forward by build/scripts/update-build.sh, and ignored
+        # by build/scripts/check-build.sh
+        default: "0.1.0-dev" # the current version, kept current by build/scripts/bump-version.sh
 
 jobs:
   # bumps the version with read only access, the changes are handed to the push job as a patch so
@@ -30,13 +32,6 @@ jobs:
         run: |
           # the checkout is before the bump, the wit package's version is the current version
           current=$( sed -n "s/^package ${GITHUB_REPOSITORY/\//:}@\(.*\);$/\1/p" wit/worlds.wit )
-          if [ -z "${VERSION}" ] ; then
-            if [[ "${current}" != *-* ]] ; then
-              echo "::error::the current version '${current}' is not a pre-release, the version to bump to is required"
-              exit 1
-            fi
-            VERSION="${current%%-*}"
-          fi
           identifier='(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)'
           semver="^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-${identifier}(\.${identifier})*)?$"
           if ! [[ "${VERSION}" =~ ${semver} ]] ; then

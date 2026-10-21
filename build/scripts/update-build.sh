@@ -7,7 +7,8 @@
 # Downloads the release, removes the files synced from the previous version, listed in
 # build/MANIFEST, copies in the files of the release, listed in its SYNC file, and records the
 # version in build/VERSION and a checksum of each file in build/MANIFEST, checked by
-# build/scripts/check-build.sh. A tool pinned in tools/Cargo.toml to a version older than the
+# build/scripts/check-build.sh. The current version the repository keeps in a synced file, the
+# default of the bump-version workflow, is carried forward. A tool pinned in tools/Cargo.toml to a version older than the
 # release's build/tool-versions requires is raised to that version.
 #
 # <version>         the release to update to, e.g. v0.2.0, the latest release by default
@@ -58,6 +59,24 @@ if [[ ! -f "$source/SYNC" ]]; then
     exit 1
 fi
 
+# the line of a synced file the repository keeps current, the default version of the bump-version
+# workflow, e.g. `default: "0.1.0-dev" # the current version, kept current by
+# build/scripts/bump-version.sh`. Its value is the repository's own, left out of the checksum.
+CURRENT_VERSION_RE='"[^"]*"( # the current version, kept current by build/scripts/bump-version\.sh)$'
+# the checksum of a synced file, without the value the repository keeps current
+checksum() {
+    sed -E "s|${CURRENT_VERSION_RE}|\"\"\1|" "$1" | shasum -a 256 | cut -d ' ' -f 1
+}
+
+# the current version kept in a file, e.g. `0.1.0-dev`, also from a file of the build before it moved
+# into build/, kept current by scripts/bump-version.sh
+current_version() {
+    [[ -f "$1" ]] && sed -nE 's|.*"([^"]*)" # the current version, kept current by (build/)?scripts/bump-version\.sh$|\1|p' "$1" | head -n 1
+}
+
+# the repository's version, the version of its interface package, e.g. `package componentized:http@0.1.0-dev;`
+interface_version=$(sed -n 's/^package [^@]*@\(.*\);$/\1/p' wit/worlds.wit 2> /dev/null | head -n 1 || true)
+
 # a path in the repository, relative and inside it, e.g. build/build.mk
 check_path() {
     if [[ "$1" == /* || "/$1/" == */../* ]]; then
@@ -98,9 +117,19 @@ fi
 
 while read -r path; do
     mkdir -p "$(dirname "$path")"
-    if ! cmp -s "$source/$path" "$path"; then
+    cp "$source/$path" "$path.tmp"
+    # the repository's current version rather than the build's, or its interface version for a file
+    # it didn't have yet
+    current=$(current_version "$path" || true)
+    current="${current:-$interface_version}"
+    if [[ -n "$current" ]]; then
+        sed -E "s|${CURRENT_VERSION_RE}|\"${current}\"\1|" "$path.tmp" > "$path.tmp.current"
+        mv "$path.tmp.current" "$path.tmp"
+    fi
+    if cmp -s "$path.tmp" "$path"; then
+        rm "$path.tmp"
+    else
         # moved into place rather than overwritten, e.g. this script while it runs
-        cp "$source/$path" "$path.tmp"
         mv "$path.tmp" "$path"
         echo "updated ${path}"
     fi
@@ -108,8 +137,9 @@ while read -r path; do
 done < "$synced"
 
 echo "$version" > build/VERSION
-# shellcheck disable=SC2046
-shasum -a 256 $(cat "$synced") > build/MANIFEST
+while read -r path; do
+    echo "$(checksum "$path")  ${path}"
+done < "$synced" > build/MANIFEST
 
 # raise the tools pinned to a version older than the build requires, e.g. `wac-cli = "=0.11.0"`
 while read -r tool required; do
