@@ -43,7 +43,7 @@ The repository's `Makefile` sets these before `include build/build.mk`. Each has
 | `COMPONENT_DEBUG_PROFILE` | `component-debug` when Cargo.toml has a `[profile.component-debug]`, otherwise `dev` | the cargo profile of a component's debug build |
 | `COMPONENT_OPTIMIZE` | set when `wasm-opt` is pinned in `tools/Cargo.toml` | optimize the release builds again for size with wasm-opt, `COMPONENT_OPTIMIZE=` builds without |
 | `CARGO_COMPONENT_DEPS` | | files the components cargo builds need besides their sources, e.g. a component the library embeds |
-| `CONSTANTS`, `STATIC_CONFIG` | the pinned `componentized-constants-cli` and `componentized-static-config-cli` | a repository that builds its own cli sets its path, e.g. `CONSTANTS = $(TOOLS_BIN)/constants`, with `=` as the tools aren't read yet, and adds a rule for it |
+| `LOCAL_TOOLS` | | tools built from the workspace rather than pinned in `tools/Cargo.toml`, each a package, e.g. `componentized-constants-cli` in componentized/constants. Installed with the pinned tools, with a variable for each binary like a pinned tool, e.g. `$(CONSTANTS)`, and installed again when the sources of the package, or of the workspace packages it depends on, change. The components built with a local tool are built again when it changes. A local tool replaces a pinned tool of the same name, and a file it embeds is added as a prerequisite, e.g. `$(call tool,componentized-static-config-cli): $(CONFIG_ADAPTER_WASM)` |
 | `CLI_BIN` | | the cli built from the repository, e.g. `constants`. The CI workflow builds it for each platform, smoke tests it with `scripts/smoke-test-cli.sh <cli> <dir>` when the repository has one, and attaches the archives to the release |
 | `PUBLISH_CRATES` | | the crates the release workflow publishes to crates.io, e.g. `componentized-constants componentized-constants-cli`, checked with `cargo publish --dry-run` by the CI workflow |
 
@@ -60,7 +60,7 @@ A repository extends a target by adding prerequisites after the include, make me
 | `generate` | the CI workflow, which fails when the generated files differ from those committed | `generate: config` |
 | `test` | `make`, the CI workflow | `test: test-grammar` |
 | `test-integration` | the CI workflow, after `make test` | `test-integration: test-valkey`, tests that need a server in a container |
-| `tools` | `make`, the workflows | `tools: $(CONSTANTS)`, a cli the repository builds |
+| `tools` | `make`, the workflows | `tools: $(WASI_SDK)`, a tool installed other than with cargo |
 
 ## Moving a repository to the build
 
@@ -89,7 +89,7 @@ This repository is built by its own build, with the synced workflows, like any o
 | [`defaults`](components/defaults/) | a component built with the constants cli, implementing `defaults` from the `@value` of each function |
 | [`dep-componentized-logging-to-stderr`](components/dep-componentized-logging-to-stderr/) | a component pulled from a registry, wasi:logging written to stderr |
 | [`hello`](components/hello/) | a composition of the three, run by `make test-integration` with wasmtime |
-| [`crates/hello`](crates/hello/) | a cli, built for each platform, smoke tested and checked with `cargo publish --dry-run` |
+| [`crates/hello`](crates/hello/) | a cli, built for each platform, smoke tested and checked with `cargo publish --dry-run`, and installed as a local tool, `$(HELLO)`, run by `make test-integration` |
 
 `make test` also runs [`test/sync-test.sh`](test/sync-test.sh), which syncs the build into a new repository and checks the drift check. The `Lint` workflow runs shellcheck. As the source of the build rather than a copy of it, this repository has no `build/VERSION` or `build/MANIFEST`: `make check-build` passes, and the `Update build` workflow skips it.
 

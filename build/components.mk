@@ -45,14 +45,6 @@ COMPONENT_OPTIMIZE ?= $(if $(filter wasm-opt,$(TOOLS)),$(filter-out wasm32-wasip
 # limited to these so it doesn't introduce instructions rust wouldn't emit.
 WASM_OPT_FEATURES ?= --enable-bulk-memory --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext
 
-# the clis components are built with, each pinned in tools/Cargo.toml, or built from this repository,
-# e.g. componentized/constants builds its own constants cli. A repository that builds a cli sets its
-# variable, e.g. `CONSTANTS = $(TOOLS_BIN)/constants`, and has a rule for it, the components are built
-# again when it changes.
-pinned_or_built = $(if $(filter $(1),$(TOOLS)),| $(call tool,$(1)),$(2))
-CONSTANTS_CLI = $(call pinned_or_built,componentized-constants-cli,$(CONSTANTS))
-STATIC_CONFIG_CLI = $(call pinned_or_built,componentized-static-config-cli,$(STATIC_CONFIG))
-
 .PHONY: clean-components
 clean-components: clean-wit
 	rm -rf ${COMPONENTS_DIR} ${WAC_DEPS_DIR}
@@ -67,18 +59,18 @@ components/$1: ${COMPONENTS_DIR}/$1/$1.wasm ${COMPONENTS_DIR}/$1/$1.debug.wasm
 
 ifneq ($(wildcard components/$1/wit/$1.constants.wit),)
 
-${COMPONENTS_DIR}/$1/$1.wasm: components/$1/wit/deps ${COMPONENTS_DIR}/$1/README.md $(CONSTANTS_CLI)
+${COMPONENTS_DIR}/$1/$1.wasm: components/$1/wit/deps ${COMPONENTS_DIR}/$1/README.md $(call tool_prerequisite,componentized-constants-cli)
 	$(CONSTANTS) --wit components/$1/wit -o ${COMPONENTS_DIR}/$1/$1.wasm
 
-${COMPONENTS_DIR}/$1/$1.debug.wasm: components/$1/wit/deps ${COMPONENTS_DIR}/$1/README.md $(CONSTANTS_CLI)
+${COMPONENTS_DIR}/$1/$1.debug.wasm: components/$1/wit/deps ${COMPONENTS_DIR}/$1/README.md $(call tool_prerequisite,componentized-constants-cli)
 	$(CONSTANTS) --wit components/$1/wit -o ${COMPONENTS_DIR}/$1/$1.debug.wasm
 
 else ifneq ($(wildcard components/$1/$1.properties),)
 
-${COMPONENTS_DIR}/$1/$1.wasm: components/$1/$1.properties ${COMPONENTS_DIR}/$1/README.md $(STATIC_CONFIG_CLI)
+${COMPONENTS_DIR}/$1/$1.wasm: components/$1/$1.properties ${COMPONENTS_DIR}/$1/README.md $(call tool_prerequisite,componentized-static-config-cli)
 	$(STATIC_CONFIG) -f components/$1/$1.properties -o ${COMPONENTS_DIR}/$1/$1.wasm
 
-${COMPONENTS_DIR}/$1/$1.debug.wasm: components/$1/$1.properties ${COMPONENTS_DIR}/$1/README.md $(STATIC_CONFIG_CLI)
+${COMPONENTS_DIR}/$1/$1.debug.wasm: components/$1/$1.properties ${COMPONENTS_DIR}/$1/README.md $(call tool_prerequisite,componentized-static-config-cli)
 	$(STATIC_CONFIG) -f components/$1/$1.properties -o ${COMPONENTS_DIR}/$1/$1.debug.wasm
 
 else ifneq ($(wildcard components/$1/$1.wac),)
