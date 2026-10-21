@@ -1,0 +1,19 @@
+name: Lint
+
+# the build repository's own checks of the build, the other workflows are synced into each
+# repository, and build this one too, see README.md
+
+on:
+  push:
+    branches:
+      - "**"
+      - "!dependabot/**"
+  pull_request: {}
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Shellcheck
+        run: shellcheck --severity=warning build/scripts/*.sh scripts/*.sh test/*.sh

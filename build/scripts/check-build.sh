@@ -12,6 +12,12 @@ set -euo pipefail
 
 cd "$(dirname "$0")/../.."
 
+# componentized/build itself, the source of the files rather than a copy of them
+if [[ -f SYNC ]]; then
+    echo "the build repository, nothing synced to check"
+    exit 0
+fi
+
 if [[ ! -f build/MANIFEST || ! -f build/VERSION ]]; then
     echo "unable to find build/MANIFEST and build/VERSION, run \`make update-build\` to sync the build" >&2
     exit 1

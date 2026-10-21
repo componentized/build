@@ -1,0 +1,7 @@
+/// Greetings, an interface just big enough to smoke test the build: its own components implement
+/// it, compose it with a component pulled from a registry, and publish it.
+interface greeter {
+    /// A greeting for the name, e.g. `Hello, world!` for `world`. An empty name is greeted with the
+    /// default name.
+    greet: func(name: string) -> string;
+}

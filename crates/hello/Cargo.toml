@@ -1,0 +1,12 @@
+[package]
+name = "componentized-build-hello"
+description = "Prints a greeting, a cli to smoke test the componentized build"
+version.workspace = true
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/componentized/build"
+readme = "README.md"
+
+[[bin]]
+name = "hello"
+path = "src/main.rs"

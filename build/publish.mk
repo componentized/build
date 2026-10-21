@@ -1,5 +1,7 @@
 # sign published components with cosign, `SIGN=false` to push without signing, e.g. to a local registry
 SIGN ?= true
+# show what would be published without pushing or signing anything, `DRY_RUN=true`
+DRY_RUN ?= false
 # append each published file, its size in bytes and its image to this file, e.g. `gate.wasm 1234567 ghcr.io/componentized/http/gate:0.1.0@sha256:...`
 PUBLISH_LOG ?=
 
@@ -13,5 +15,5 @@ publish: $(addprefix publish-,$(PUBLISH_FILES))
 
 .PHONY: $(addprefix publish-,$(PUBLISH_FILES))
 $(addprefix publish-,$(PUBLISH_FILES)): publish-%: | $(call tool,wkg)
-	@VERSION="$(VERSION)" REPOSITORY="$(REPOSITORY)" COMPONENTS_DIR="$(COMPONENTS_DIR)" SIGN="$(SIGN)" PUBLISH_LOG="$(PUBLISH_LOG)" \
+	@VERSION="$(VERSION)" REPOSITORY="$(REPOSITORY)" COMPONENTS_DIR="$(COMPONENTS_DIR)" SIGN="$(SIGN)" PUBLISH_LOG="$(PUBLISH_LOG)" DRY_RUN="$(DRY_RUN)" \
 		build/scripts/publish.sh $*

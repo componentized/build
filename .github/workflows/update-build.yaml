@@ -15,6 +15,8 @@ jobs:
   # opens a pull request updating the build synced from componentized/build to its latest release, like
   # dependabot. The pull request is left for the repository to merge when it's ready.
   update:
+    # componentized/build is the source of the build, it has no synced copy to update
+    if: github.repository != 'componentized/build'
     runs-on: ubuntu-latest
     # the branch and pull request are created with a token for the custodian GitHub App rather than the
     # GITHUB_TOKEN, which can't change workflow files and doesn't trigger the CI workflow

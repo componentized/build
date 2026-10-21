@@ -1,0 +1,6 @@
+package componentized:build@0.1.0-dev;
+
+world imports {
+    import greeter;
+    import defaults;
+}

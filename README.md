@@ -47,6 +47,8 @@ The repository's `Makefile` sets these before `include build/build.mk`. Each has
 | `CLI_BIN` | | the cli built from the repository, e.g. `constants`. The CI workflow builds it for each platform, smoke tests it with `scripts/smoke-test-cli.sh <cli> <dir>` when the repository has one, and attaches the archives to the release |
 | `PUBLISH_CRATES` | | the crates the release workflow publishes to crates.io, e.g. `componentized-constants componentized-constants-cli`, checked with `cargo publish --dry-run` by the CI workflow |
 
+Publishing reads `DRY_RUN`: `make publish DRY_RUN=true` shows each image it would push, with its annotations, without pushing or signing anything. In the workflows the repository variable `DRY_RUN=true` does the same, also skipping the login to the registry and the GitHub release the CI workflow drafts for a tag, and the release workflow checks the crates with `cargo publish --dry-run` rather than publishing them.
+
 ## Targets
 
 `make` runs `tools`, `generate`, `components` and `test`. Other targets: `wit`, `publish`, `tools-path`, `clean`, `clean-all`, `update-build`, `check-build`, `print-<variable>`.
@@ -76,18 +78,33 @@ A repository extends a target by adding prerequisites after the include, make me
 
 The `bump-version` workflow no longer has a default version, which changed with every bump. An empty version releases the current pre-release, e.g. 0.2.0 for 0.2.0-dev.
 
+## This repository builds with the build
+
+This repository is built by its own build, with the synced workflows, like any other repository. Its components and cli are just enough to smoke test each kind of thing the build makes:
+
+| | |
+| --- | --- |
+| [`wit/`](wit/worlds.wit) | `componentized:build`, the public interface, built into `interface.wasm`: a `greeter`, and its `defaults` |
+| [`greeter`](components/greeter/) | a component built with cargo, implementing `greeter`, importing `defaults` and `wasi:logging` |
+| [`defaults`](components/defaults/) | a component built with the constants cli, implementing `defaults` from the `@value` of each function |
+| [`dep-componentized-logging-to-stderr`](components/dep-componentized-logging-to-stderr/) | a component pulled from a registry, wasi:logging written to stderr |
+| [`hello`](components/hello/) | a composition of the three, run by `make test-integration` with wasmtime |
+| [`crates/hello`](crates/hello/) | a cli, built for each platform, smoke tested and checked with `cargo publish --dry-run` |
+
+`make test` also runs [`test/sync-test.sh`](test/sync-test.sh), which syncs the build into a new repository and checks the drift check. The `Lint` workflow runs shellcheck. As the source of the build rather than a copy of it, this repository has no `build/VERSION` or `build/MANIFEST`: `make check-build` passes, and the `Update build` workflow skips it.
+
+The repository variable `DRY_RUN` is `true` here: pushes to main and tags go through publishing without publishing anything.
+
 ## Changing the build
 
-Change the files here, then try the change in a repository before releasing it:
+Change the files here, and check them with `make`. Then try the change in a repository before releasing it:
 
 ```sh
 BUILD_SOURCE=../build make update-build
 ```
 
-`test/sync-test.sh` checks the sync and the drift check, run with shellcheck by the `Self test` workflow.
-
 ### Releasing
 
-Tag a commit `vX.Y.Z` and publish a GitHub release for it, the `Update build` workflow of each repository looks for the latest release. Say in the release notes when a repository has to change, e.g. a new setting or a tool it must pin.
+Release with the `Bump version` workflow like any other repository, the version of the build is the version of its `componentized:build` interface. It tags the release, e.g. `v0.1.0`, and moves on to the next pre-release.
 
-The synced workflows are disabled in this repository's Actions settings, they're here to be synced and for dependabot to bump their actions.
+With `DRY_RUN`, no GitHub release is drafted for the tag, publish one for it by hand: the `Update build` workflow of each repository looks for the latest release. Say in the release notes when a repository has to change, e.g. a new setting or a tool it must pin.

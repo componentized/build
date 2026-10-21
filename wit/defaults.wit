@@ -1,0 +1,6 @@
+/// The defaults of a greeter.
+interface defaults {
+    /// The name greeted when none is given.
+    /// @value "world"
+    name: func() -> string;
+}
