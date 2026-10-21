@@ -1,0 +1,7 @@
+version: 2
+updates:
+  # the synced workflows as well as the build repository's own, see README.md
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: daily

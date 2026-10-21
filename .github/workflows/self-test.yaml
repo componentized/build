@@ -1,0 +1,22 @@
+name: Self test
+
+# the build repository's own CI, the other workflows are synced into each repository, see README.md
+
+on:
+  push:
+    branches:
+      - "**"
+      - "!dependabot/**"
+    tags:
+      - 'v*'
+  pull_request: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Shellcheck
+        run: shellcheck --severity=warning build/scripts/*.sh test/*.sh
+      - name: Sync test
+        run: test/sync-test.sh

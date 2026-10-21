@@ -1,0 +1,7 @@
+# the paths synced into each repository by build/scripts/update-build.sh, a directory syncs all of its
+# files. Each repository has a copy of these files and the version they came from, in build/VERSION.
+build
+.github/workflows/bump-version.yaml
+.github/workflows/ci.yaml
+.github/workflows/release.yaml
+.github/workflows/update-build.yaml
