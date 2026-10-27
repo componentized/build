@@ -3,6 +3,6 @@ package componentized:build-components;
 /// Greets with the default name for an empty name, and logs each greeting.
 world greeter {
     import wasi:logging/logging@0.1.0-draft;
-    import componentized:build/defaults@0.1.1-dev;
-    export componentized:build/greeter@0.1.1-dev;
+    import componentized:build/defaults@0.1.1;
+    export componentized:build/greeter@0.1.1;
 }
