@@ -11,7 +11,7 @@ LOCAL_TOOLS := componentized-build-hello
 
 include build/build.mk
 
-test: test-sync
+test: test-sync check-components validate-components
 test-integration: test-hello test-hello-tool
 
 .PHONY: test-sync ## Test syncing the build into a repository, and its drift check

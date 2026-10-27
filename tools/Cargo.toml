@@ -17,6 +17,7 @@ path = "lib.rs"
 [package.metadata.bins]
 componentized-constants-cli = ["constants"]
 wac-cli = ["wac"]
+wasm-opt = ["wasm-opt"]
 wasm-tools = ["wasm-tools"]
 wasmtime-cli = ["wasmtime"]
 wkg = ["wkg"]
@@ -24,6 +25,7 @@ wkg = ["wkg"]
 [dependencies]
 componentized-constants-cli = "=0.2.0"
 wac-cli = "=0.12.0"
+wasm-opt = "=0.116.1"
 wasm-tools = "=1.262.0"
 wasmtime-cli = "=50.0.0"
 wkg = "=0.16.1"
