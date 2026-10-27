@@ -16,7 +16,7 @@ checksum = "3ded4057c258ba199e2d26386d3af3780957ecaee6c4ef4041c6b4b8b97c0b06"
 
 [[package]]
 name = "componentized-build-hello"
-version = "0.1.1"
+version = "0.1.2-dev"
 
 [[package]]
 name = "equivalent"
@@ -32,7 +32,7 @@ checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
 
 [[package]]
 name = "greeter"
-version = "0.1.1"
+version = "0.1.2-dev"
 dependencies = [
  "wit-bindgen",
 ]
