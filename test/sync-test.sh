@@ -16,7 +16,8 @@ fail() {
     exit 1
 }
 
-# a repository with the build's files and a tool pinned below the version the build requires
+# a repository with the build's files, and tools overriding those the build provides: older, the
+# same and newer than the build's, and one only the repository uses
 mkdir -p "$repo/build/scripts" "$repo/tools"
 # an older copy of the script, the sync replaces it while it runs
 # shellcheck disable=SC2016
@@ -29,10 +30,22 @@ mkdir -p "$repo/.github/workflows"
 cat > "$repo/.github/workflows/bump-version.yaml" <<'YAML'
         default: "9.9.9-dev" # the current version, kept current by scripts/bump-version.sh
 YAML
-cat > "$repo/tools/Cargo.toml" <<'TOML'
+provided() {
+    sed -n "s/^$1 = \"=\(.*\)\"$/\1/p" "$root/build/tools/Cargo.toml"
+}
+wkg_version=$(provided wkg)
+cat > "$repo/tools/Cargo.toml" <<TOML
+[package.metadata.bins]
+wac-cli = ["wac"]
+wasm-tools = ["wasm-tools"]
+wasmtime-cli = ["wasmtime"]
+wkg = ["wkg"]
+
 [dependencies]
-wac-cli = "=0.11.0"
-wkg = "=0.16.1"
+wac-cli = "=0.0.1"
+wasm-tools = "=999.0.0"
+wasmtime-cli = "=1.0.0"
+wkg = "=${wkg_version}"
 TOML
 
 echo "--- sync"
@@ -44,8 +57,11 @@ while read -r path; do
     diff -r -x VERSION -x MANIFEST "$root/$path" "$repo/$path" > /dev/null || fail "$path differs from the build"
 done < "$root/SYNC"
 [[ -x "$repo/build/scripts/check-build.sh" ]] || fail "the scripts are not executable"
-grep -qxF 'wac-cli = "=0.12.0"' "$repo/tools/Cargo.toml" || fail "wac-cli was not raised to the version the build requires"
-grep -qxF 'wkg = "=0.16.1"' "$repo/tools/Cargo.toml" || fail "wkg was changed"
+if grep -q '^wac-cli = ' "$repo/tools/Cargo.toml"; then fail "an override older than the build's was kept"; fi
+if grep -q '^wkg = ' "$repo/tools/Cargo.toml"; then fail "an override the same as the build's was kept"; fi
+grep -qxF 'wasm-tools = "=999.0.0"' "$repo/tools/Cargo.toml" || fail "an override newer than the build's was removed"
+grep -qxF 'wasm-tools = ["wasm-tools"]' "$repo/tools/Cargo.toml" || fail "the binaries of an override newer than the build's were removed"
+grep -qxF 'wasmtime-cli = "=1.0.0"' "$repo/tools/Cargo.toml" || fail "a tool the build doesn't provide was removed"
 
 workflow=.github/workflows/bump-version.yaml
 default_re='^ *default: "%s" # the current version, kept current by build/scripts/bump-version.sh$'

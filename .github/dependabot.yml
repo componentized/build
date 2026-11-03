@@ -1,19 +1,27 @@
 version: 2
 updates:
+  # the tools the build provides to every repository
+  - package-ecosystem: cargo
+    directory: "/build/tools"
+    schedule:
+      interval: daily
   # the synced workflows as well as the build repository's own, see README.md
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: daily
+
+  # test dependencies
+
   - package-ecosystem: cargo
     directory: "/"
     schedule:
-      interval: daily
+      interval: weekly
   - package-ecosystem: cargo
     directory: "/tools"
     schedule:
-      interval: daily
+      interval: weekly
   - package-ecosystem: rust-toolchain
     directory: "/"
     schedule:
-      interval: daily
+      interval: weekly

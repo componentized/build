@@ -9,6 +9,9 @@ PUBLISH_CRATES := componentized-build-hello
 # the constants cli in componentized/constants, run as `$(HELLO)`
 LOCAL_TOOLS := componentized-build-hello
 
+# the greeter's release build is optimized again with wasm-opt
+COMPONENT_OPTIMIZE := true
+
 include build/build.mk
 
 test: test-sync check-components validate-components

@@ -12,10 +12,11 @@ build/                     synced, never edited in the repository
   VERSION                  the release synced, e.g. v0.2.0
   MANIFEST                 a checksum of each synced file, checked by `make check-build`
   build.mk                 the targets every repository has, includes the other make files
-  tools.mk wit.mk components.mk publish.mk sync.mk pinned.jq tool-versions
+  tools.mk wit.mk components.mk publish.mk sync.mk pinned.jq local.jq
+  tools/Cargo.toml         the tools the build provides, see Tools
   scripts/                 publish.sh, bump-version.sh, update-build.sh, ...
 .github/workflows/         ci.yaml, bump-version.yaml, release.yaml, update-build.yaml: synced
-tools/Cargo.toml           repository-owned, the pinned tools, bumped by dependabot
+tools/Cargo.toml           repository-owned and optional, the repository's own tools and overrides, bumped by dependabot
 ```
 
 [`SYNC`](SYNC) lists the paths synced into each repository.
@@ -26,7 +27,7 @@ tools/Cargo.toml           repository-owned, the pinned tools, bumped by dependa
 
 The `Update build` workflow does the same each week, and opens a pull request when there is a newer release, like dependabot. The pull request is created with the custodian GitHub App, the `GITHUB_TOKEN` can't change workflow files. The app needs the `contents`, `workflows` and `pull-requests` write permissions, and the `CUSTODIAN_CLIENT_ID` and `CUSTODIAN_PRIVATE_KEY` secrets must be available to the repository.
 
-The versions of the tools stay in the repository's `tools/Cargo.toml`, bumped by dependabot. When a release of the build needs a newer tool it says so in [`build/tool-versions`](build/tool-versions), and the update raises a tool pinned to an older version.
+The versions of the tools the build provides come with it, see [Tools](#tools). The update removes a tool the repository overrides in its `tools/Cargo.toml` once the build pins the same version or a newer one.
 
 ### Drift
 
@@ -41,13 +42,24 @@ The repository's `Makefile` sets these before `include build/build.mk`. Each has
 | `COMPONENT_TARGET` | `wasm32-unknown-unknown` | the rust target of the components cargo builds. `wasm32-wasip3` installs wasi-sdk with the tools, or uses `WASI_SDK_PATH` |
 | `COMPONENT_PROFILE` | `component` when Cargo.toml has a `[profile.component]`, otherwise `release` | the cargo profile of a component's release build |
 | `COMPONENT_DEBUG_PROFILE` | `component-debug` when Cargo.toml has a `[profile.component-debug]`, otherwise `dev` | the cargo profile of a component's debug build |
-| `COMPONENT_OPTIMIZE` | set when `wasm-opt` is pinned in `tools/Cargo.toml` | optimize the release builds again for size with wasm-opt, `COMPONENT_OPTIMIZE=` builds without |
+| `COMPONENT_OPTIMIZE` | | optimize the release builds again for size with wasm-opt when set, e.g. `COMPONENT_OPTIMIZE := true` |
 | `CARGO_COMPONENT_DEPS` | | files the components cargo builds need besides their sources, e.g. a component the library embeds |
-| `LOCAL_TOOLS` | | tools built from the workspace rather than pinned in `tools/Cargo.toml`, each a package, e.g. `componentized-constants-cli` in componentized/constants. Installed with the pinned tools, with a variable for each binary like a pinned tool, e.g. `$(CONSTANTS)`, and installed again when the sources of the package, or of the workspace packages it depends on, change. The components built with a local tool are built again when it changes. A local tool replaces a pinned tool of the same name, and a file it embeds is added as a prerequisite, e.g. `$(call tool,componentized-static-config-cli): $(CONFIG_ADAPTER_WASM)` |
+| `LOCAL_TOOLS` | | tools built from the workspace rather than pinned, each a package, e.g. `componentized-constants-cli` in componentized/constants. Installed with the pinned tools, with a variable for each binary like a pinned tool, e.g. `$(CONSTANTS)`, and installed again when the sources of the package, or of the workspace packages it depends on, change. The components built with a local tool are built again when it changes. A local tool replaces a pinned tool of the same name, one the build provides too, and a file it embeds is added as a prerequisite, e.g. `$(call tool,componentized-static-config-cli): $(CONFIG_ADAPTER_WASM)` |
 | `CLI_BIN` | | the cli built from the repository, e.g. `constants`. The CI workflow builds it for each platform, smoke tests it with `scripts/smoke-test-cli.sh <cli> <dir>` when the repository has one, and attaches the archives to the release |
 | `PUBLISH_CRATES` | | the crates the release workflow publishes to crates.io, e.g. `componentized-constants componentized-constants-cli`, checked with `cargo publish --dry-run` by the CI workflow |
 
 Publishing reads `DRY_RUN`: `make publish DRY_RUN=true` shows each image it would push, with its annotations, without pushing or signing anything. In the workflows the repository variable `DRY_RUN=true` does the same, also skipping the login to the registry and the GitHub release the CI workflow drafts for a tag, and the release workflow checks the crates with `cargo publish --dry-run` rather than publishing them.
+
+## Tools
+
+The build provides the tools its rules run, pinned in [`build/tools/Cargo.toml`](build/tools/Cargo.toml) and bumped by dependabot here: `wac`, `wkg`, `wasm-opt`, `wasm-tools`, and the `constants` and `static-config` clis. `make tools` installs them in `target/tools`, with cargo binstall when it's installed, and a recipe runs each by path from a variable named after its binary, e.g. `$(WASM_TOOLS)`.
+
+A repository changes a tool the build provides, or adds its own, without changing the build:
+
+- **A newer version**: pin it in the repository's `tools/Cargo.toml`, which overrides the build's, with the binaries it installs in `[package.metadata.bins]`. Dependabot bumps it there, and `make update-build` removes it once the build catches up, pinning the same version or a newer one.
+- **Built from the workspace**: name its package in `LOCAL_TOOLS`, e.g. `LOCAL_TOOLS := componentized-constants-cli` in componentized/constants, built from the repository's sources in place of the version the build provides.
+- **A binary built elsewhere**, to try a change: set its variable on the command line, e.g. `make WKG=../wkg/target/release/wkg`. The scripts the recipes run find the installed tools on the `PATH`.
+- **Its own tools**, e.g. `wasmtime-cli` for its tests: pin them in `tools/Cargo.toml` like an override. A repository with no tools of its own needs no `tools/Cargo.toml`, nor its dependabot entry.
 
 ## Targets
 
