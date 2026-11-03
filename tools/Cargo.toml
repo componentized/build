@@ -1,4 +1,6 @@
-# The versions of the cli tools the build uses, installed by `make tools` with cargo binstall.
+# The cli tools this repository uses besides those the build provides in build/tools/Cargo.toml,
+# installed by `make tools` with cargo binstall. A tool the build provides is overridden here with a
+# newer version, `make update-build` removes the override once the build pins that version or newer.
 #
 # This package is never built, it lists the tools as dependencies so dependabot bumps them. Each
 # tool is pinned to an exact version with `=`, the Makefile installs that version.
@@ -13,22 +15,12 @@ publish = false
 path = "lib.rs"
 
 # the binaries each tool installs, the Makefile runs each by path from a variable named after it,
-# e.g. `$(WASM_TOOLS)` for `wasm-tools`
+# e.g. `$(WASMTIME)` for `wasmtime-cli`
 [package.metadata.bins]
-componentized-constants-cli = ["constants"]
-wac-cli = ["wac"]
-wasm-opt = ["wasm-opt"]
-wasm-tools = ["wasm-tools"]
 wasmtime-cli = ["wasmtime"]
-wkg = ["wkg"]
 
 [dependencies]
-componentized-constants-cli = "=0.2.0"
-wac-cli = "=0.12.0"
-wasm-opt = "=0.116.1"
-wasm-tools = "=1.263.0"
 wasmtime-cli = "=50.0.1"
-wkg = "=0.16.1"
 
 # not a member of the repository's workspace
 [workspace]
