@@ -50,6 +50,8 @@ The repository's `Makefile` sets these before `include build/build.mk`. Each has
 
 Publishing reads `DRY_RUN`: `make publish DRY_RUN=true` shows each image it would push, with its annotations, without pushing or signing anything. In the workflows the repository variable `DRY_RUN=true` does the same, also skipping the login to the registry and the GitHub release the CI workflow drafts for a tag, and the release workflow checks the crates with `cargo publish --dry-run` rather than publishing them.
 
+The variable `COMPONENTIZED_DIRECTORY_SCAN=true` asks [componentized/directory](https://github.com/componentized/directory) to scan the components the CI workflow publishes, there is no scan for a dry run. It is set for every repository in the componentized organization, so a repository outside it, without the custodian's access to the directory, doesn't request a scan that would fail. The scan is requested with the custodian GitHub App, which needs the `contents` write permission on componentized/directory.
+
 ## Tools
 
 The build provides the tools its rules run, pinned in [`build/tools/Cargo.toml`](build/tools/Cargo.toml) and bumped by dependabot here: `wac`, `wkg`, `wasm-opt`, `wasm-tools`, and the `constants` and `static-config` clis. `make tools` installs them in `target/tools`, with cargo binstall when it's installed, and a recipe runs each by path from a variable named after its binary, e.g. `$(WASM_TOOLS)`.
