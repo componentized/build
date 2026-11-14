@@ -21,16 +21,18 @@ test-integration: test-hello test-hello-tool
 test-sync:
 	test/sync-test.sh
 
-# the composed hello component, greeting through the greeter, the defaults and the logger pulled
-# from componentized/logging
-.PHONY: test-hello ## Run the hello component
-test-hello: ${COMPONENTS_DIR}/hello/hello.wasm | $(call tool,wasmtime-cli)
+# the hello components, composed and plugged, greeting through the greeter, the defaults and the
+# logger pulled from componentized/logging
+.PHONY: test-hello ## Run the hello components
+test-hello: ${COMPONENTS_DIR}/hello/hello.wasm ${COMPONENTS_DIR}/hello-plug/hello-plug.wasm | $(call tool,wasmtime-cli)
 	@set -e; \
-	for greeting in 'greet("build")=Hello, build!' 'greet("")=Hello, world!'; do \
-		call=$${greeting%%=*}; expected="\"$${greeting#*=}\""; \
-		actual=$$($(WASMTIME) run --invoke "$$call" ${COMPONENTS_DIR}/hello/hello.wasm); \
-		echo "$$call = $$actual"; \
-		if [ "$$actual" != "$$expected" ]; then echo "expected $$call to return $$expected" >&2; exit 1; fi; \
+	for component in hello hello-plug; do \
+		for greeting in 'greet("build")=Hello, build!' 'greet("")=Hello, world!'; do \
+			call=$${greeting%%=*}; expected="\"$${greeting#*=}\""; \
+			actual=$$($(WASMTIME) run --invoke "$$call" ${COMPONENTS_DIR}/$$component/$$component.wasm); \
+			echo "$$component $$call = $$actual"; \
+			if [ "$$actual" != "$$expected" ]; then echo "expected $$call of $$component to return $$expected" >&2; exit 1; fi; \
+		done; \
 	done
 
 .PHONY: test-hello-tool ## Run the hello cli installed with the tools
