@@ -103,6 +103,7 @@ This repository is built by its own build, with the synced workflows, like any o
 | [`defaults`](components/defaults/) | a component built with the constants cli, implementing `defaults` from the `@value` of each function |
 | [`dep-componentized-logging-to-stderr`](components/dep-componentized-logging-to-stderr/) | a component pulled from a registry, wasi:logging written to stderr |
 | [`hello`](components/hello/) | a composition of the three, run by `make test-integration` with wasmtime |
+| [`hello-plug`](components/hello-plug/) | the three plugged together with `wac plug`, run by `make test-integration` with wasmtime |
 | [`crates/hello`](crates/hello/) | a cli, built for each platform, smoke tested and checked with `cargo publish --dry-run`, and installed as a local tool, `$(HELLO)`, run by `make test-integration` |
 
 `make test` also runs [`test/sync-test.sh`](test/sync-test.sh), which syncs the build into a new repository and checks the drift check. The `Lint` workflow runs shellcheck. As the source of the build rather than a copy of it, this repository has no `build/VERSION` or `build/MANIFEST`: `make check-build` passes, and the `Update build` workflow skips it.

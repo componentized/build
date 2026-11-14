@@ -1,0 +1,4 @@
+# the socket, then each plug
+greeter
+defaults
+dep-componentized-logging-to-stderr

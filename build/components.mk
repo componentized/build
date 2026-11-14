@@ -4,7 +4,7 @@ COMPONENTS_DIR := target/components
 # composition names without instantiating it, e.g. `import stderr: wasi:cli/stderr@0.3.0;`
 WAC_DEPS_DIR := target/wac-deps
 
-COMPONENTS = $(sort $(foreach file,$(wildcard $(addprefix components/*/,wit/*.constants.wit *.properties *.wac *.wkg Cargo.toml)),$(word 2,$(subst /, ,$(file)))))
+COMPONENTS = $(sort $(foreach file,$(wildcard $(addprefix components/*/,wit/*.constants.wit *.properties *.wac *.plug *.wkg Cargo.toml)),$(word 2,$(subst /, ,$(file)))))
 
 # the cargo profiles components are built with, `component` and `component-debug` when Cargo.toml
 # defines them, e.g. to build smaller components than the release profile a cli is built with
@@ -114,6 +114,26 @@ ${COMPONENTS_DIR}/$1/$1.wasm: components/$1/$1.wac $$(foreach component,$$(WAC_D
 
 ${COMPONENTS_DIR}/$1/$1.debug.wasm: components/$1/$1.wac $$(foreach component,$$(WAC_DEPS_$1),$${COMPONENTS_DIR}/$$(component)/$$(component).debug.wasm) ${COMPONENTS_DIR}/$1/README.md ${WAC_DEPS_DIR} | $(call tool,wac-cli)
 	$(WAC) compose --deps-dir ${WAC_DEPS_DIR} $$(foreach component,$$(WAC_DEPS_$1),-d local:$$(component)=$${COMPONENTS_DIR}/$$(component)/$$(component).debug.wasm) -o ${COMPONENTS_DIR}/$1/$1.debug.wasm components/$1/$1.wac
+
+else ifneq ($(wildcard components/$1/$1.plug),)
+
+# the components plugged together with `wac plug`, each a component of the repository named on a line
+# of its own, the socket first, then each plug, `#` starts a comment, e.g.
+#
+#   greeter
+#   defaults
+#
+# Where the socket and a plug import different versions of the same interface, e.g. wasi:io@0.2.6 and
+# wasi:io@0.2.12, the plugged component imports the newer one, a composition the one it imports first.
+PLUG_COMPONENTS_$1 := $$(shell sed 's/\#.*//' components/$1/$1.plug)
+PLUG_SOCKET_$1 := $$(firstword $$(PLUG_COMPONENTS_$1))
+PLUG_PLUGS_$1 := $$(wordlist 2,$$(words $$(PLUG_COMPONENTS_$1)),$$(PLUG_COMPONENTS_$1))
+
+${COMPONENTS_DIR}/$1/$1.wasm: components/$1/$1.plug $$(foreach component,$$(PLUG_COMPONENTS_$1),$${COMPONENTS_DIR}/$$(component)/$$(component).wasm) ${COMPONENTS_DIR}/$1/README.md | $(call tool,wac-cli)
+	$(WAC) plug $${COMPONENTS_DIR}/$$(PLUG_SOCKET_$1)/$$(PLUG_SOCKET_$1).wasm $$(foreach component,$$(PLUG_PLUGS_$1),--plug $${COMPONENTS_DIR}/$$(component)/$$(component).wasm) -o ${COMPONENTS_DIR}/$1/$1.wasm
+
+${COMPONENTS_DIR}/$1/$1.debug.wasm: components/$1/$1.plug $$(foreach component,$$(PLUG_COMPONENTS_$1),$${COMPONENTS_DIR}/$$(component)/$$(component).debug.wasm) ${COMPONENTS_DIR}/$1/README.md | $(call tool,wac-cli)
+	$(WAC) plug $${COMPONENTS_DIR}/$$(PLUG_SOCKET_$1)/$$(PLUG_SOCKET_$1).debug.wasm $$(foreach component,$$(PLUG_PLUGS_$1),--plug $${COMPONENTS_DIR}/$$(component)/$$(component).debug.wasm) -o ${COMPONENTS_DIR}/$1/$1.debug.wasm
 
 else ifneq ($(wildcard components/$1/$1.wkg),)
 
