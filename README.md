@@ -39,7 +39,7 @@ The repository's `Makefile` sets these before `include build/build.mk`. Each has
 
 | Setting | Default | |
 | --- | --- | --- |
-| `COMPONENT_TARGET` | `wasm32-unknown-unknown` | the rust target of the components cargo builds. `wasm32-wasip3` installs wasi-sdk with the tools, or uses `WASI_SDK_PATH` |
+| `COMPONENT_TARGET` | `wasm32-unknown-unknown` | the rust target of the components cargo builds. `wasm32-wasip3` installs wasi-sdk with the tools, or uses `WASI_SDK_PATH`. `wasm32-wasip2` copies the component rust links, without `COMPONENT_OPTIMIZE`. A component names its own in its Cargo.toml, `[package.metadata.componentized]` `target = "wasm32-wasip2"`, a binary crate builds a command |
 | `COMPONENT_PROFILE` | `component` when Cargo.toml has a `[profile.component]`, otherwise `release` | the cargo profile of a component's release build |
 | `COMPONENT_DEBUG_PROFILE` | `component-debug` when Cargo.toml has a `[profile.component-debug]`, otherwise `dev` | the cargo profile of a component's debug build |
 | `COMPONENT_OPTIMIZE` | | optimize the release builds again for size with wasm-opt when set, e.g. `COMPONENT_OPTIMIZE := true` |
