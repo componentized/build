@@ -13,8 +13,12 @@ COMPONENT_DEBUG_PROFILE ?= $(if $(shell grep -s '^\[profile\.component-debug\]' 
 
 # the core module cargo built for a component with a profile, e.g. `$(call cargo_wasm,gate,dev)` for
 # target/wasm32-unknown-unknown/debug/gate.wasm, `$(call cargo_wasm,gate,release,.opt)` for the
-# module wasm-opt optimized
-cargo_wasm = target/$(call component_target,$(1))/$(if $(filter dev,$(2)),debug,$(2))/$(subst -,_,$(1))$(3).wasm
+# module wasm-opt optimized. For wasm32-wasip2 cargo builds a component rather than a core module.
+cargo_wasm = target/$(call component_target,$(1))/$(if $(filter dev,$(2)),debug,$(2))/$(call cargo_artifact,$(1))$(3).wasm
+
+# the name of the wasm file cargo builds for a package, a library's has `_` for each `-`, a binary
+# keeps the package's name, e.g. a command for wasm32-wasip2 with a src/main.rs and no src/lib.rs
+cargo_artifact = $(if $(and $(wildcard components/$(1)/src/main.rs),$(if $(wildcard components/$(1)/src/lib.rs),,bin)),$(1),$(subst -,_,$(1)))
 
 # the files the components cargo builds need besides the sources, e.g. a component the library
 # embeds, `CARGO_COMPONENT_DEPS := crates/componentized-static-config/constants-config.wasm`
@@ -34,12 +38,18 @@ export CARGO_TARGET_WASM32_WASIP3_LINKER := $(WASI_SDK_PATH)/bin/wasm-component-
 export CARGO_TARGET_WASM32_WASIP3_RUSTFLAGS := -Clink-self-contained=n -Clink-arg=-L$(WASI_SYSROOT_LIB) -Clink-arg=$(WASI_SYSROOT_LIB)/crt1-reactor.o -Clink-arg=--export=cabi_realloc -Clink-arg=--skip-wit-component
 endif
 
-# turn the core module cargo built into a component
-componentize = $(WASM_TOOLS) component new $(1) -o $(2)
+# turn the core module cargo built for a component into a component, e.g. `$(call
+# componentize,gate,<module>,<component>)`. For wasm32-wasip2 rust links a component itself, with
+# wasm-component-ld, which is copied.
+componentize = $(if $(filter wasm32-wasip2,$(call component_target,$(1))),cp $(2) $(3),$(WASM_TOOLS) component new $(2) -o $(3))
 
 # the release build of a component is optimized again for size with wasm-opt when set, e.g.
-# `COMPONENT_OPTIMIZE := true`, the build provides wasm-opt to every repository
+# `COMPONENT_OPTIMIZE := true`, the build provides wasm-opt to every repository. wasm-opt optimizes
+# core modules, a component built for wasm32-wasip2 is not optimized again.
 COMPONENT_OPTIMIZE ?=
+
+# whether the release build of a component is optimized again, e.g. `$(call component_optimize,gate)`
+component_optimize = $(if $(COMPONENT_OPTIMIZE),$(filter-out wasm32-wasip2,$(call component_target,$(1))))
 
 # the wasm features rust enables for wasm32-unknown-unknown and wasm32-wasip3, `rustc --print cfg
 # --target wasm32-unknown-unknown`. The stripped modules don't say which features they use, wasm-opt
@@ -116,18 +126,18 @@ ${COMPONENTS_DIR}/$1/$1.debug.wasm: components/$1/$1.wkg ${COMPONENTS_DIR}/$1/RE
 # cargo is checked last, other strategies may have a Cargo.toml for tests of non-rust sources
 else ifneq ($(wildcard components/$1/Cargo.toml),)
 
-${COMPONENTS_DIR}/$1/$1.wasm: $(CARGO_COMPONENT_DEPS) Cargo.toml Cargo.lock components/wit/deps $(shell find components/$1 -type f) $(shell find crates -type f 2> /dev/null) ${COMPONENTS_DIR}/$1/README.md | $(call tool,wasm-tools) $(if $(COMPONENT_OPTIMIZE),$(call tool,wasm-opt)) $(if $(filter wasm32-wasip3,$(call component_target,$1)),$(WASI_SDK) $(WASI_LIBC))
+${COMPONENTS_DIR}/$1/$1.wasm: $(CARGO_COMPONENT_DEPS) Cargo.toml Cargo.lock components/wit/deps $(shell find components/$1 -type f) $(shell find crates -type f 2> /dev/null) ${COMPONENTS_DIR}/$1/README.md | $(call tool,wasm-tools) $(if $(call component_optimize,$1),$(call tool,wasm-opt)) $(if $(filter wasm32-wasip3,$(call component_target,$1)),$(WASI_SDK) $(WASI_LIBC))
 	cargo build -p $1 --target $(call component_target,$1) --profile $(COMPONENT_PROFILE)
-ifneq ($(COMPONENT_OPTIMIZE),)
+ifneq ($(call component_optimize,$1),)
 	$(WASM_OPT) -Oz $(WASM_OPT_FEATURES) $(call cargo_wasm,$1,$(COMPONENT_PROFILE)) -o $(call cargo_wasm,$1,$(COMPONENT_PROFILE),.opt)
-	$(call componentize,$(call cargo_wasm,$1,$(COMPONENT_PROFILE),.opt),${COMPONENTS_DIR}/$1/$1.wasm)
+	$(call componentize,$1,$(call cargo_wasm,$1,$(COMPONENT_PROFILE),.opt),${COMPONENTS_DIR}/$1/$1.wasm)
 else
-	$(call componentize,$(call cargo_wasm,$1,$(COMPONENT_PROFILE)),${COMPONENTS_DIR}/$1/$1.wasm)
+	$(call componentize,$1,$(call cargo_wasm,$1,$(COMPONENT_PROFILE)),${COMPONENTS_DIR}/$1/$1.wasm)
 endif
 
 ${COMPONENTS_DIR}/$1/$1.debug.wasm: $(CARGO_COMPONENT_DEPS) Cargo.toml Cargo.lock components/wit/deps $(shell find components/$1 -type f) $(shell find crates -type f 2> /dev/null) ${COMPONENTS_DIR}/$1/README.md | $(call tool,wasm-tools) $(if $(filter wasm32-wasip3,$(call component_target,$1)),$(WASI_SDK) $(WASI_LIBC))
 	cargo build -p $1 --target $(call component_target,$1) --profile $(COMPONENT_DEBUG_PROFILE)
-	$(call componentize,$(call cargo_wasm,$1,$(COMPONENT_DEBUG_PROFILE)),${COMPONENTS_DIR}/$1/$1.debug.wasm)
+	$(call componentize,$1,$(call cargo_wasm,$1,$(COMPONENT_DEBUG_PROFILE)),${COMPONENTS_DIR}/$1/$1.debug.wasm)
 
 endif
 
