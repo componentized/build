@@ -293,15 +293,60 @@ jobs:
           VERSION: "${{ steps.version.outputs.VERSION }}"
       - name: Draft release notes
         if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && contains(steps.interface_version.outputs.VERSION, '-'))
+        # with COMPONENTIZED_DIRECTORY_SCAN=true, each file leads with its id and icon linking to the
+        # page componentized.dev serves its version at once the directory-scan job's scan has indexed
+        # it, the debug build to the page of its version. The directory's id of a package is its repository
+        # path, e.g. ghcr.io/componentized/logging is componentized:logging, the interface, and
+        # ghcr.io/componentized/logging/levels is componentized:logging-levels, a component. The icon
+        # is the directory's for the kind of package, https://componentized.dev/_icons/, in the colors
+        # of GitHub's light or dark theme, neutral where the theme isn't known.
+        env:
+          DIRECTORY: ${{ vars.COMPONENTIZED_DIRECTORY_SCAN == 'true' }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
+          icons="https://componentized.dev/_icons"
           {
             echo "## Published components"
             echo
-            echo "| File | Size | Image |"
-            echo "| --- | --: | --- |"
+            if [ "${DIRECTORY}" = "true" ] ; then
+              echo "| Directory | File | Size | Image |"
+              echo "| --- | --- | --: | --- |"
+            else
+              echo "| File | Size | Image |"
+              echo "| --- | --: | --- |"
+            fi
             while read -r file bytes image ; do
               size=$( numfmt --to=iec-i --suffix=B --format=%.1f "${bytes}" )
-              echo "| \`${file}\` | ${size} | \`${image}\` |"
+              row="| \`${file}\` | ${size} | \`${image}\` |"
+              if [ "${DIRECTORY}" = "true" ] ; then
+                # e.g. ghcr.io/componentized/logging/levels:0.3.1@sha256:... -> componentized/logging/levels
+                path="${image#*/}"
+                path="${path%%[:@]*}"
+                namespace="${path%%/*}"
+                name="${path#*/}"
+                name="${name//\//-}"
+                # the directory's kind: the interface is a package, a component composed with wac
+                # is a composition, e.g. levels.debug.wasm from components/levels/levels.wac
+                component="${file%.wasm}"
+                component="${component%.debug}"
+                if [ "${file}" = "interface.wasm" ] ; then
+                  kind=package
+                elif [ -f "components/${component}/${component}.wac" ] || [ -f "components/${component}/${component}.plug" ] ; then
+                  kind=composition
+                else
+                  kind=component
+                fi
+                id="${namespace}:${name}@${VERSION}"
+                # each icon is 26 by 26, a 16 by 16 icon with a margin for its badges, centered on the
+                # text. GitHub drops the styles that would keep the id on one line, so a word joiner
+                # holds the id to its icon and its hyphens are non-breaking hyphens, the link and its
+                # title have the id as it is. The link has GitHub's color, GitHub drops the styles
+                # that would give it the directory's.
+                picture="<picture><source media=\"(prefers-color-scheme: dark)\" srcset=\"${icons}/dark/${kind}.svg\"><source media=\"(prefers-color-scheme: light)\" srcset=\"${icons}/light/${kind}.svg\"><img src=\"${icons}/neutral/${kind}.svg\" width=\"26\" height=\"26\" align=\"absmiddle\" alt=\"${kind}\"></picture>"
+                label="${id//-/$'\xe2\x80\x91'}"
+                row="| <a href=\"https://componentized.dev/${namespace}/${name}/${VERSION}/\" title=\"${id}\">${picture}"$'\xe2\x81\xa0'"${label}</a> ${row}"
+              fi
+              echo "${row}"
             done < "${RUNNER_TEMP}/published.txt"
           } > "${RUNNER_TEMP}/release-notes.md"
           cat "${RUNNER_TEMP}/release-notes.md"
