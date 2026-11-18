@@ -37,7 +37,7 @@ tokio = { version = "1.54.1", features = ["rt", "time"] }
 # the versions of wkg, see build/tools/Cargo.toml, packages are looked up as wkg looks them up, and
 # images as `wkg oci pull` pulls them
 wasm-pkg-client = "0.16.2"
-oci-client = { version = "0.17.0", default-features = false, features = ["rustls-tls"] }
+oci-client = { version = "0.18.0", default-features = false, features = ["rustls-tls"] }
 docker_credential = "1.4.0"
 
 [dev-dependencies]
