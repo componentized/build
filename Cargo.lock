@@ -38,6 +38,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "greeter-wasip2"
+version = "0.1.6-dev"
+dependencies = [
+ "wit-bindgen",
+]
+
+[[package]]
+name = "greeter-wasip3"
+version = "0.1.6-dev"
+dependencies = [
+ "wit-bindgen",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
