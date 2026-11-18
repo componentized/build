@@ -14,6 +14,6 @@ PUBLISH_FILES := interface.wasm $(foreach component,$(filter-out dep-% internal-
 publish: $(addprefix publish-,$(PUBLISH_FILES))
 
 .PHONY: $(addprefix publish-,$(PUBLISH_FILES))
-$(addprefix publish-,$(PUBLISH_FILES)): publish-%: | $(call tool,wkg)
-	@VERSION="$(VERSION)" REPOSITORY="$(REPOSITORY)" COMPONENTS_DIR="$(COMPONENTS_DIR)" SIGN="$(SIGN)" PUBLISH_LOG="$(PUBLISH_LOG)" DRY_RUN="$(DRY_RUN)" \
+$(addprefix publish-,$(PUBLISH_FILES)): publish-%: | $(call tool,wkg) $(COSIGN_INSTALLED)
+	@COSIGN="$(COSIGN)" VERSION="$(VERSION)" REPOSITORY="$(REPOSITORY)" COMPONENTS_DIR="$(COMPONENTS_DIR)" SIGN="$(SIGN)" PUBLISH_LOG="$(PUBLISH_LOG)" SBOM_DIR="$(PUBLISHED_SBOM_DIR)" DRY_RUN="$(DRY_RUN)" \
 		build/scripts/publish.sh $*

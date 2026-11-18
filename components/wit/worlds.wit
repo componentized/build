@@ -6,3 +6,9 @@ world greeter {
     import componentized:build/defaults@0.1.6-dev;
     export componentized:build/greeter@0.1.6-dev;
 }
+
+/// Greets with the default name from the environment, `GREETER_NAME`, through the standard library: it
+/// imports only what the standard library of its target imports, e.g. `wasi:cli/environment`.
+world env-greeter {
+    export componentized:build/greeter@0.1.6-dev;
+}
