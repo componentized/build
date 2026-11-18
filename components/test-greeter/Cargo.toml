@@ -1,5 +1,5 @@
 [package]
-name = "greeter"
+name = "test-greeter"
 version.workspace = true
 edition = "2024"
 license = "Apache-2.0"

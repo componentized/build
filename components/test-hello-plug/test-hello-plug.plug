@@ -1,4 +1,4 @@
 # the socket, then each plug
-greeter
-defaults
+test-greeter
+test-defaults
 dep-componentized-logging-to-stderr

@@ -1,4 +1,4 @@
-# defaults
+# test-defaults
 
 The defaults of a greeter, `world` as the name greeted when none is given.
 

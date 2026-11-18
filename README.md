@@ -48,6 +48,7 @@ The repository's `Makefile` sets these before `include build/build.mk`. Each has
 | `LOCAL_TOOLS` | | tools built from the workspace rather than pinned, each a package, e.g. `componentized-constants-cli` in componentized/constants. Installed with the pinned tools, with a variable for each binary like a pinned tool, e.g. `$(CONSTANTS)`, and installed again when the sources of the package, or of the workspace packages it depends on, change. The components built with a local tool are built again when it changes. A local tool replaces a pinned tool of the same name, one the build provides too, and a file it embeds is added as a prerequisite, e.g. `$(call tool,componentized-static-config-cli): $(CONFIG_ADAPTER_WASM)` |
 | `CLI_BIN` | | the cli built from the repository, e.g. `constants`. The CI workflow builds it for each platform, smoke tests it with `scripts/smoke-test-cli.sh <cli> <dir>` when the repository has one, and attaches the archives to the release |
 | `PUBLISH_CRATES` | | the crates the release workflow publishes to crates.io, e.g. `componentized-constants componentized-constants-cli`, checked with `cargo publish --dry-run` by the CI workflow |
+| `PUBLISH_INTERFACE` | `true` | publish the interface, `interface.wasm`, `false` for a repository whose interface isn't one to depend on, e.g. componentized/build, whose interface is there to test the build. The components published are those that aren't `dep-`, `internal-` or `test-` |
 
 Publishing reads `DRY_RUN`: `make publish DRY_RUN=true` shows each image it would push, with its annotations, without pushing or signing anything. In the workflows the repository variable `DRY_RUN=true` does the same, also skipping the login to the registry and the GitHub release the CI workflow drafts for a tag, and the release workflow checks the crates with `cargo publish --dry-run` rather than publishing them.
 
@@ -114,23 +115,23 @@ A dev version is published again with each build of its repository, at the same 
 
 ## This repository builds with the build
 
-This repository is built by its own build, with the synced workflows, like any other repository. Its components and cli are just enough to smoke test each kind of thing the build makes:
+This repository is built by its own build, with the synced workflows, like any other repository. Its components and cli are just enough to smoke test each kind of thing the build makes. The components are tests, `test-`, and its interface is too, `PUBLISH_INTERFACE := false`, so nothing of it is published but its cli:
 
 | | |
 | --- | --- |
-| [`wit/`](wit/worlds.wit) | `componentized:build`, the public interface, built into `interface.wasm`: a `greeter`, and its `defaults` |
-| [`greeter`](components/greeter/) | a component built with cargo, implementing `greeter`, importing `defaults` and `wasi:logging` |
-| [`greeter-wasip2`](components/greeter-wasip2/) | a component built with cargo for `wasm32-wasip2`, implementing `greeter` with the default name from the environment, linking the wasi-libc the Rust toolchain bundles, run by `make test-integration` with wasmtime |
-| [`greeter-wasip3`](components/greeter-wasip3/) | a component built with cargo for `wasm32-wasip3`, like `greeter-wasip2` greeting on a cooperative thread, linking the wasi-libc of the wasi-sdk sysroot, run by `make test-integration` with wasmtime |
-| [`defaults`](components/defaults/) | a component built with the constants cli, implementing `defaults` from the `@value` of each function |
+| [`wit/`](wit/worlds.wit) | `componentized:build`, the interface, built into `interface.wasm`, not published: a `greeter`, and its `defaults` |
+| [`test-greeter`](components/test-greeter/) | a component built with cargo, implementing `greeter`, importing `defaults` and `wasi:logging` |
+| [`test-greeter-wasip2`](components/test-greeter-wasip2/) | a component built with cargo for `wasm32-wasip2`, implementing `greeter` with the default name from the environment, linking the wasi-libc the Rust toolchain bundles, run by `make test-integration` with wasmtime |
+| [`test-greeter-wasip3`](components/test-greeter-wasip3/) | a component built with cargo for `wasm32-wasip3`, like `test-greeter-wasip2` greeting on a cooperative thread, linking the wasi-libc of the wasi-sdk sysroot, run by `make test-integration` with wasmtime |
+| [`test-defaults`](components/test-defaults/) | a component built with the constants cli, implementing `defaults` from the `@value` of each function |
 | [`dep-componentized-logging-to-stderr`](components/dep-componentized-logging-to-stderr/) | a component pulled from a registry, wasi:logging written to stderr |
-| [`hello`](components/hello/) | a composition of the three, run by `make test-integration` with wasmtime |
-| [`hello-plug`](components/hello-plug/) | the three plugged together with `wac plug`, run by `make test-integration` with wasmtime |
+| [`test-hello`](components/test-hello/) | a composition of the three, run by `make test-integration` with wasmtime |
+| [`test-hello-plug`](components/test-hello-plug/) | the three plugged together with `wac plug`, run by `make test-integration` with wasmtime |
 | [`crates/cli`](crates/cli/) | `componentized-build`, the cli that updates a repository's dependencies, see [Updating a dependency](#updating-a-dependency), built for each platform, smoke tested with [`scripts/smoke-test-cli.sh`](scripts/smoke-test-cli.sh), checked with `cargo publish --dry-run`, and installed as a local tool, `$(COMPONENTIZED_BUILD)`, run by `make test-integration` |
 
 `make test` also runs [`test/sync-test.sh`](test/sync-test.sh), which syncs the build into a new repository and checks the drift check. The `Lint` workflow runs shellcheck. As the source of the build rather than a copy of it, this repository has no `build/VERSION` or `build/MANIFEST`: `make check-build` passes, and the `Update build` workflow skips it.
 
-The repository variable `DRY_RUN` is `true` here: pushes to main and tags go through publishing without publishing anything.
+Pushes to main and tags go through publishing with nothing to publish, and the release of a tag is drafted with `components.tar` and the cli archives. The release workflow publishes the `componentized-build-cli` crate, the cli every repository gets as a tool, at the version `build/tools/Cargo.toml` pins. crates.io's trusted publishing only applies to a crate that exists, so its first version was published by hand.
 
 ## Changing the build
 
@@ -144,4 +145,4 @@ BUILD_SOURCE=../build make update-build
 
 Release with the `Bump version` workflow like any other repository, the version of the build is the version of its `componentized:build` interface. It tags the release, e.g. `v0.1.0`, and moves on to the next pre-release.
 
-With `DRY_RUN`, no GitHub release is drafted for the tag, publish one for it by hand: the `Update build` workflow of each repository looks for the latest release. Say in the release notes when a repository has to change, e.g. a new setting or a tool it must pin.
+The CI workflow drafts the GitHub release of the tag, publish it once it's reviewed: publishing it publishes the cli crate, and the `Update build` workflow of each repository looks for the latest release. Say in the release notes when a repository has to change, e.g. a new setting or a tool it must pin.

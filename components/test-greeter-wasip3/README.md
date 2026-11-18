@@ -1,4 +1,4 @@
-# greeter-wasip3
+# test-greeter-wasip3
 
 Greets a name, with the default name from the environment, `GREETER_NAME`, when the name is empty, built for `wasm32-wasip3`.
 

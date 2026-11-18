@@ -132,6 +132,16 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
           target: ${{ matrix.target }}
+      - name: Install musl
+        # the static linux builds compile the C of a crate the cli depends on, e.g. aws-lc-sys of rustls,
+        # with musl-gcc, cc looks for a cross compiler, e.g. x86_64-linux-musl-gcc, the runners have none
+        if: endsWith(matrix.target, '-linux-musl')
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          echo "CC_${TARGET//-/_}=musl-gcc" >> "${GITHUB_ENV}"
       - name: Build cli
         run: cargo build --release --locked --bin "${CLI_BIN}" --target ${{ matrix.target }}
       - name: Package cli
@@ -282,7 +292,8 @@ jobs:
         id: publish
         run: |
           make publish
-          if [ "${DRY_RUN}" != "true" ] ; then
+          # nothing may be published, e.g. a repository of tests, see PUBLISH_INTERFACE
+          if [ "${DRY_RUN}" != "true" ] && [ -s "${PUBLISH_LOG}" ] ; then
             echo "published=true" >> "${GITHUB_OUTPUT}"
           fi
         env:
@@ -303,6 +314,13 @@ jobs:
           VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
           icons="https://componentized.dev/_icons"
+          published="${RUNNER_TEMP}/published.txt"
+          if [ ! -s "${published}" ] ; then
+            # nothing published, e.g. a repository of tests, see PUBLISH_INTERFACE, or a dry run
+            echo "No components are published with this release." > "${RUNNER_TEMP}/release-notes.md"
+            cat "${RUNNER_TEMP}/release-notes.md"
+            exit 0
+          fi
           {
             echo "## Published components"
             echo
@@ -345,17 +363,17 @@ jobs:
                 row="| <a href=\"https://componentized.dev/${namespace}/${name}/${VERSION}/\" title=\"${id}\">${picture}"$'\xe2\x81\xa0'"${label}</a> ${row}"
               fi
               echo "${row}"
-            done < "${RUNNER_TEMP}/published.txt"
+            done < "${published}"
           } > "${RUNNER_TEMP}/release-notes.md"
           cat "${RUNNER_TEMP}/release-notes.md"
       - name: Pack components.tar with the published SBOMs
         # each component released with an SBOM, the one it's published with, see PUBLISHED_SBOM_DIR in
         # build/sbom.mk, in place of the build's, which doesn't name its version or image. A file that
         # isn't published, e.g. a dep- component, keeps the build's, see build/scripts/pack-components.sh
-        if: startsWith(github.ref, 'refs/tags/') && ( env.DRY_RUN != 'true' || github.repository == 'componentized/build' )
+        if: startsWith(github.ref, 'refs/tags/') && env.DRY_RUN != 'true'
         run: build/scripts/pack-components.sh target/components target/sbom/published components.tar
       - name: Draft GitHub Release
-        if: startsWith(github.ref, 'refs/tags/') && ( env.DRY_RUN != 'true' || github.repository == 'componentized/build' )
+        if: startsWith(github.ref, 'refs/tags/') && env.DRY_RUN != 'true'
         uses: softprops/action-gh-release@v3
         with:
           draft: true

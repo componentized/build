@@ -800,27 +800,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "greeter"
-version = "0.1.6-dev"
-dependencies = [
- "wit-bindgen",
-]
-
-[[package]]
-name = "greeter-wasip2"
-version = "0.1.6-dev"
-dependencies = [
- "wit-bindgen",
-]
-
-[[package]]
-name = "greeter-wasip3"
-version = "0.1.6-dev"
-dependencies = [
- "wit-bindgen",
-]
-
-[[package]]
 name = "h2"
 version = "0.4.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2139,6 +2118,27 @@ checksum = "230a1b821ccbd75b185820a1f1ff7b14d21da1e442e22c0863ea5f08771a8874"
 dependencies = [
  "rustix",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "test-greeter"
+version = "0.1.6-dev"
+dependencies = [
+ "wit-bindgen",
+]
+
+[[package]]
+name = "test-greeter-wasip2"
+version = "0.1.6-dev"
+dependencies = [
+ "wit-bindgen",
+]
+
+[[package]]
+name = "test-greeter-wasip3"
+version = "0.1.6-dev"
+dependencies = [
+ "wit-bindgen",
 ]
 
 [[package]]

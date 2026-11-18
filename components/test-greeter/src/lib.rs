@@ -1,19 +1,16 @@
-//! Greets a name, the default name from the environment when it's empty, built for wasm32-wasip3: the
-//! greeting is made on a thread of its own, a component model cooperative thread.
+//! Greets a name, the default name when it's empty, and logs each greeting.
 
+use componentized::build::defaults;
 use exports::componentized::build::greeter::Guest;
+use wasi::logging::logging::{Level, log};
 
 struct Component;
 
 impl Guest for Component {
     fn greet(name: String) -> String {
-        // joined before the export returns, a thread that outlives it isn't supported by wasi-sdk 34's
-        // wasi-libc, see WebAssembly/wasi-libc#884
-        std::thread::spawn(move || {
-            greeting(&name, || std::env::var("GREETER_NAME").unwrap_or_else(|_| "wasip3".to_string()))
-        })
-        .join()
-        .expect("the greeting thread panicked")
+        let greeting = greeting(&name, defaults::name);
+        log(Level::Info, "greeter", &greeting);
+        greeting
     }
 }
 
@@ -42,9 +39,9 @@ mod tests {
 }
 
 wit_bindgen::generate!({
-    // `path` is relative to the manifest, `components/greeter-wasip3/`
+    // `path` is relative to the manifest, `components/test-greeter/`
     path: "../wit",
-    world: "env-greeter",
+    world: "greeter",
     generate_all,
 });
 

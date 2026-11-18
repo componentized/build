@@ -1,9 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-    "components/greeter",
-    "components/greeter-wasip2",
-    "components/greeter-wasip3",
+    "components/test-greeter",
+    "components/test-greeter-wasip2",
+    "components/test-greeter-wasip3",
     "crates/cli",
 ]
 

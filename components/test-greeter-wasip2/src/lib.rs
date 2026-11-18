@@ -35,7 +35,7 @@ mod tests {
 }
 
 wit_bindgen::generate!({
-    // `path` is relative to the manifest, `components/greeter-wasip2/`
+    // `path` is relative to the manifest, `components/test-greeter-wasip2/`
     path: "../wit",
     world: "env-greeter",
     generate_all,
