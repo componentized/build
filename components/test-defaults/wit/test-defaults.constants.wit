@@ -1,0 +1,5 @@
+package componentized:build-test-defaults;
+
+world defaults {
+    export componentized:build/defaults@0.1.6-dev;
+}

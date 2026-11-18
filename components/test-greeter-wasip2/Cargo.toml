@@ -1,0 +1,16 @@
+[package]
+name = "test-greeter-wasip2"
+version.workspace = true
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+
+[package.metadata.componentized]
+# built for wasm32-wasip2, see build/components.mk
+target = "wasm32-wasip2"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = { workspace = true }

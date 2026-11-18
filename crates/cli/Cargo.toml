@@ -1,0 +1,45 @@
+[package]
+name = "componentized-build-cli"
+description = "Updates a componentized repository's dependencies on the interfaces and components of other repositories"
+version.workspace = true
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/componentized/build"
+homepage = "https://componentized.dev"
+readme = "README.md"
+keywords = ["wasm", "webassembly", "component-model", "wit", "oci"]
+categories = ["command-line-utilities", "development-tools", "wasm"]
+
+[[bin]]
+name = "componentized-build"
+path = "src/main.rs"
+
+# the archives of the release, named after the binary, see the cli job of .github/workflows/ci.yaml
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/componentized-build-{ target }{ archive-suffix }"
+bin-dir = "{ bin }{ binary-ext }"
+pkg-fmt = "tgz"
+
+[package.metadata.binstall.overrides.'cfg(windows)']
+pkg-fmt = "zip"
+
+[dependencies]
+anstream = "1.0.0"
+anyhow = "1.0.104"
+clap = { version = "4.6.8", features = ["derive", "wrap_help"] }
+clap_complete = { version = "4.6.12", features = ["unstable-dynamic"] }
+ignore = "0.4.34"
+regex = "1.13.2"
+semver = "1.0.28"
+strsim = "0.11.1"
+toml_edit = "0.25.19"
+tokio = { version = "1.54.1", features = ["rt", "time"] }
+# the versions of wkg, see build/tools/Cargo.toml, packages are looked up as wkg looks them up, and
+# images as `wkg oci pull` pulls them
+wasm-pkg-client = "0.16.2"
+oci-client = { version = "0.17.0", default-features = false, features = ["rustls-tls"] }
+docker_credential = "1.4.0"
+
+[dev-dependencies]
+sha2 = "0.10.9"
+tempfile = "3.23.0"
