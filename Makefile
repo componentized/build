@@ -1,13 +1,13 @@
-# This repository builds with its own build, its components and cli exist to smoke test it, see
-# README.md
+# This repository builds with its own build, its components exist to smoke test it, as does its cli,
+# componentized-build, which updates a repository's dependencies, see README.md
 
 # the cli, released with an archive for each platform, and published to crates.io
-CLI_BIN := hello
-PUBLISH_CRATES := componentized-build-hello
+CLI_BIN := componentized-build
+PUBLISH_CRATES := componentized-build-cli
 
 # the cli installed as a tool built from the workspace, like a cli the components are built with, e.g.
-# the constants cli in componentized/constants, run as `$(HELLO)`
-LOCAL_TOOLS := componentized-build-hello
+# the constants cli in componentized/constants, run as `$(COMPONENTIZED_BUILD)`
+LOCAL_TOOLS := componentized-build-cli
 
 # the greeter's release build is optimized again with wasm-opt
 COMPONENT_OPTIMIZE := true
@@ -18,7 +18,7 @@ CHECK_COMPONENTS_SKIP := greeter-wasip2 greeter-wasip3
 include build/build.mk
 
 test: test-sync check-components validate-components
-test-integration: test-hello test-greeters test-hello-tool
+test-integration: test-hello test-greeters test-cli
 
 .PHONY: test-sync ## Test syncing the build into a repository, and its drift check
 test-sync:
@@ -56,8 +56,8 @@ test-greeters: $(foreach component,greeter-wasip2 greeter-wasip3,${COMPONENTS_DI
 		done; \
 	done
 
-.PHONY: test-hello-tool ## Run the hello cli installed with the tools
-test-hello-tool: $(call tool_prerequisite,componentized-build-hello)
-	@actual=$$($(HELLO) build); \
-	echo "$(notdir $(HELLO)) build = $$actual"; \
-	if [ "$$actual" != "Hello, build!" ]; then echo "expected 'Hello, build!'" >&2; exit 1; fi
+# the cli installed with the tools, run in this repository as the CI workflow runs the cli unpacked
+# from its archive, see scripts/smoke-test-cli.sh
+.PHONY: test-cli ## Run the componentized-build cli installed with the tools
+test-cli: $(call tool_prerequisite,componentized-build-cli)
+	scripts/smoke-test-cli.sh $(COMPONENTIZED_BUILD)

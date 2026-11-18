@@ -1,5 +1,9 @@
 version: 2
 updates:
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: daily
   # the tools the build provides to every repository
   - package-ecosystem: cargo
     directory: "/build/tools"
@@ -10,18 +14,14 @@ updates:
     directory: "/"
     schedule:
       interval: daily
+  - package-ecosystem: rust-toolchain
+    directory: "/"
+    schedule:
+      interval: daily
 
   # test dependencies
 
   - package-ecosystem: cargo
-    directory: "/"
-    schedule:
-      interval: weekly
-  - package-ecosystem: cargo
     directory: "/tools"
-    schedule:
-      interval: weekly
-  - package-ecosystem: rust-toolchain
-    directory: "/"
     schedule:
       interval: weekly

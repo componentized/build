@@ -57,7 +57,7 @@ The variable `COMPONENTIZED_DIRECTORY_SCAN=true` asks [componentized/directory](
 
 ## Tools
 
-The build provides the tools its rules run, pinned in [`build/tools/Cargo.toml`](build/tools/Cargo.toml) and bumped by dependabot here: `cargo-cyclonedx`, `wac`, `wkg`, `wasm-opt`, `wasm-tools`, and the `constants` and `static-config` clis. It also provides `cosign`, a release binary pinned in [`build/tools.mk`](build/tools.mk) and checked against the release's checksums, which signs the published components, attests their SBOMs and verifies the SBOMs of the components pulled with wkg. `make tools` installs them in `target/tools`, with cargo binstall when it's installed, and a recipe runs each by path from a variable named after its binary, e.g. `$(WASM_TOOLS)`.
+The build provides the tools its rules run, pinned in [`build/tools/Cargo.toml`](build/tools/Cargo.toml) and bumped by dependabot here: `cargo-cyclonedx`, `wac`, `wkg`, `wasm-opt`, `wasm-tools`, the `constants` and `static-config` clis, and `componentized-build`, see [Updating a dependency](#updating-a-dependency), run as `$(COMPONENTIZED_BUILD)`. It also provides `cosign`, a release binary pinned in [`build/tools.mk`](build/tools.mk) and checked against the release's checksums, which signs the published components, attests their SBOMs and verifies the SBOMs of the components pulled with wkg. `make tools` installs them in `target/tools`, with cargo binstall when it's installed, and a recipe runs each by path from a variable named after its binary, e.g. `$(WASM_TOOLS)`.
 
 A repository changes a tool the build provides, or adds its own, without changing the build:
 
@@ -95,6 +95,23 @@ A repository extends a target by adding prerequisites after the include, make me
 
 The default version of the `bump-version` workflow, the repository's current version, is the one line of a synced file the repository keeps: `make update-build` carries it forward, from the workflow of the previous build too, or starts it at the interface version, and `make check-build` leaves it out. `build/scripts/bump-version.sh` updates it with each bump.
 
+## Updating a dependency
+
+A repository depends on others for their interfaces, WIT packages it names at a version, e.g. `componentized:secrets/store@0.1.1-dev`, pinned in `wkg.lock` by digest, and for their components, pulled with wkg from the images a `components/dep-*/*.wkg` file pins by digest. The `componentized-build` cli, the `componentized-build-cli` crate, [`crates/cli`](crates/cli/), updates them all at once, looking up each version and digest in the registry before anything changes:
+
+```sh
+# or `make tools`, the build provides it, run with `$(make -s tools-path)/componentized-build`
+cargo install componentized-build-cli
+
+componentized-build deps                                  # what the repository depends on, by version
+componentized-build dep componentized:secrets 0.1.1       # the interface and components of componentized/secrets
+componentized-build dep componentized:secrets             # the latest build of the version it's at, e.g. 0.1.1-dev
+componentized-build dep componentized:secrets-gate 0.1.1  # one component alone
+componentized-build dep componentized:secrets 0.1.1 -n    # what would change, without changing it
+```
+
+A dev version is published again with each build of its repository, at the same tag, so a repository testing the latest dev build updates to it again, pinning its new digests. `make` then fetches the WIT and pulls the components. `componentized-build completions` registers completions with the shell, which complete the dependencies of the repository and the versions published.
+
 ## This repository builds with the build
 
 This repository is built by its own build, with the synced workflows, like any other repository. Its components and cli are just enough to smoke test each kind of thing the build makes:
@@ -109,7 +126,7 @@ This repository is built by its own build, with the synced workflows, like any o
 | [`dep-componentized-logging-to-stderr`](components/dep-componentized-logging-to-stderr/) | a component pulled from a registry, wasi:logging written to stderr |
 | [`hello`](components/hello/) | a composition of the three, run by `make test-integration` with wasmtime |
 | [`hello-plug`](components/hello-plug/) | the three plugged together with `wac plug`, run by `make test-integration` with wasmtime |
-| [`crates/hello`](crates/hello/) | a cli, built for each platform, smoke tested and checked with `cargo publish --dry-run`, and installed as a local tool, `$(HELLO)`, run by `make test-integration` |
+| [`crates/cli`](crates/cli/) | `componentized-build`, the cli that updates a repository's dependencies, see [Updating a dependency](#updating-a-dependency), built for each platform, smoke tested with [`scripts/smoke-test-cli.sh`](scripts/smoke-test-cli.sh), checked with `cargo publish --dry-run`, and installed as a local tool, `$(COMPONENTIZED_BUILD)`, run by `make test-integration` |
 
 `make test` also runs [`test/sync-test.sh`](test/sync-test.sh), which syncs the build into a new repository and checks the drift check. The `Lint` workflow runs shellcheck. As the source of the build rather than a copy of it, this repository has no `build/VERSION` or `build/MANIFEST`: `make check-build` passes, and the `Update build` workflow skips it.
 

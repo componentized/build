@@ -4,7 +4,7 @@ members = [
     "components/greeter",
     "components/greeter-wasip2",
     "components/greeter-wasip3",
-    "crates/hello",
+    "crates/cli",
 ]
 
 [workspace.package]
