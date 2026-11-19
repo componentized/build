@@ -325,7 +325,7 @@ dependencies = [
 
 [[package]]
 name = "componentized-build-cli"
-version = "0.1.6-dev"
+version = "0.1.6"
 dependencies = [
  "anstream",
  "anyhow",
@@ -2106,21 +2106,21 @@ dependencies = [
 
 [[package]]
 name = "test-greeter"
-version = "0.1.6-dev"
+version = "0.1.6"
 dependencies = [
  "wit-bindgen",
 ]
 
 [[package]]
 name = "test-greeter-wasip2"
-version = "0.1.6-dev"
+version = "0.1.6"
 dependencies = [
  "wit-bindgen",
 ]
 
 [[package]]
 name = "test-greeter-wasip3"
-version = "0.1.6-dev"
+version = "0.1.6"
 dependencies = [
  "wit-bindgen",
 ]

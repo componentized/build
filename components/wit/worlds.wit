@@ -3,12 +3,12 @@ package componentized:build-components;
 /// Greets with the default name for an empty name, and logs each greeting.
 world greeter {
     import wasi:logging/logging@0.1.0-draft;
-    import componentized:build/defaults@0.1.6-dev;
-    export componentized:build/greeter@0.1.6-dev;
+    import componentized:build/defaults@0.1.6;
+    export componentized:build/greeter@0.1.6;
 }
 
 /// Greets with the default name from the environment, `GREETER_NAME`, through the standard library: it
 /// imports only what the standard library of its target imports, e.g. `wasi:cli/environment`.
 world env-greeter {
-    export componentized:build/greeter@0.1.6-dev;
+    export componentized:build/greeter@0.1.6;
 }
