@@ -10,6 +10,11 @@ on:
       - 'v[0-9]+\.[0-9]+\.[0-9]+-?**'
   pull_request: {}
 
+# read only unless a job asks for more, e.g. publish, the GITHUB_TOKEN is otherwise the repository's
+# default, which may be able to write
+permissions:
+  contents: read
+
 jobs:
   # the settings of the repository's Makefile the other jobs need, e.g. whether it builds a cli
   settings:
@@ -31,13 +36,24 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions-rust-lang/setup-rust-toolchain@v2
+      - name: Cache tools
+        # the tools installed here, with a read only GITHUB_TOKEN, are restored by the publish job,
+        # which doesn't install them with its token that can write. Saved once the job succeeds.
+        uses: actions/cache@v6
+        with:
+          path: target/tools
+          key: tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('build/tools/Cargo.toml', 'tools/Cargo.toml', 'rust-toolchain.toml', 'build/tools.mk') }}
       - name: Install cargo binstall
         uses: cargo-bins/cargo-binstall@main
       - name: Install tools
-        # the versions pinned in build/tools/Cargo.toml and tools/Cargo.toml, on the path for later steps
+        # the versions pinned in build/tools/Cargo.toml and tools/Cargo.toml, on the path for later
+        # steps. Nothing to install when the cache is restored. The token raises cargo binstall's
+        # GitHub API rate limit.
         run: |
           make tools
           make -s tools-path >> "${GITHUB_PATH}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Generate
         # the wit dependencies, and anything else the repository generates, see `make generate`
         run: make generate
@@ -236,12 +252,18 @@ jobs:
         run: echo "::notice::a dry run, the repository variable DRY_RUN is true, nothing is published"
       - uses: actions/checkout@v7
       - uses: actions-rust-lang/setup-rust-toolchain@v2
-      - name: Install cargo binstall
-        uses: cargo-bins/cargo-binstall@main
-      - name: Install tools
-        run: |
-          make tools
-          make -s tools-path >> "${GITHUB_PATH}"
+      - name: Restore tools
+        # installed by the build job, so the tools aren't downloaded, or built, where the GITHUB_TOKEN
+        # can write and OIDC tokens can be requested. The key must match the build job's.
+        uses: actions/cache/restore@v6
+        with:
+          path: target/tools
+          key: tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('build/tools/Cargo.toml', 'tools/Cargo.toml', 'rust-toolchain.toml', 'build/tools.mk') }}
+          fail-on-cache-miss: true
+      - name: Add tools to the path
+        # the restored tools, nothing is installed. Publishing only needs the pinned tools, wkg and
+        # cosign, a local tool isn't built here.
+        run: make -s tools-path >> "${GITHUB_PATH}"
       - name: Download components.tar
         uses: actions/download-artifact@v8
         with:
