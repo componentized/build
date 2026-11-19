@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Registers the shell completions of the installed tools, sourced by bash or zsh at startup once the
 # tools are on the PATH, e.g. in ~/.bashrc:
 #
@@ -10,9 +11,13 @@
 # installed or bumped since completes in new shells. A tool that isn't installed is skipped, as is
 # one that fails to print its completions.
 
+# the arguments are the ones each line of completions sets
+# shellcheck disable=SC2120
 __componentized_completions() {
     local script completions shell line
     if [ -n "${ZSH_VERSION:-}" ]; then
+        # zsh's path of the sourced script, BASH_SOURCE in bash
+        # shellcheck disable=SC2296
         script="${(%):-%x}"
         shell=zsh
     else
