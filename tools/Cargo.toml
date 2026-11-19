@@ -19,6 +19,10 @@ path = "lib.rs"
 [package.metadata.bins]
 wasmtime-cli = ["wasmtime"]
 
+# the arguments of the binaries that print their shell completions, see build/tools/Cargo.toml
+[package.metadata.completions]
+wasmtime = ["completion"]
+
 [dependencies]
 wasmtime-cli = "=50.0.1"
 
