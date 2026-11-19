@@ -8,8 +8,9 @@
 # refreshes the generated wit dependencies. The crates share the interface's version: the
 # workspace version the crates inherit, and the workspace's requirements on its own crates that name
 # a version, e.g. `componentized-constants = { path = "./crates/componentized-constants", version =
-# "=0.2.1-dev" }`, move to the new version too. A repository without a workspace version only bumps the
-# interface. The default version of the bump-version workflow moves to the new version, the next bump
+# "=0.2.1-dev" }`, move to the new version too. A release, not a prerelease, also moves the pins of
+# the workspace's crates in the tools manifests, e.g. `componentized-build-cli = "=0.1.6"` in
+# build/tools/Cargo.toml. A repository without a workspace version only bumps the interface. The default version of the bump-version workflow moves to the new version, the next bump
 # is offered from it. Items whose `@since` names an unreleased (prerelease)
 # version move to the new version, since they were never published under the old one. Items
 # released under the old version keep their `@since`.
@@ -128,6 +129,26 @@ if [[ -n "$workspace_version" ]]; then
     for crate in $(grep -E "$crate_re" Cargo.toml | sed 's/ .*//'); do
         perl -pi -e 's/^(\Q'"${crate}"'\E = \{.*\bversion = "=?)[^"]*(")/${1}'"${new}"'${2}/' Cargo.toml
         echo "updated the ${crate} requirement in Cargo.toml"
+    done
+fi
+
+# the tools manifests' pins of the workspace's own crates, e.g. componentized/build pins its cli in
+# build/tools/Cargo.toml for the repositories it's synced to, while it builds the cli itself with
+# LOCAL_TOOLS. Moved only by a release, a prerelease isn't published to crates.io, so the pin stays
+# on the last release until the next one, published before a repository syncs it. A manifest synced
+# from componentized/build is left alone.
+if [[ -n "$workspace_version" && "$new" != *-* ]]; then
+    crates=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[].name')
+    for manifest in build/tools/Cargo.toml tools/Cargo.toml; do
+        [[ -f "$manifest" ]] || continue
+        if [[ -f build/MANIFEST ]] && awk -v path="$manifest" '$2 == path { found = 1 } END { exit !found }' build/MANIFEST; then
+            continue
+        fi
+        for crate in $crates; do
+            grep -qE "^${crate} = \"=[^\"]*\"" "$manifest" || continue
+            perl -pi -e 's/^(\Q'"${crate}"'\E = "=)[^"]*(")/${1}'"${new}"'${2}/' "$manifest"
+            echo "updated the ${crate} pin in ${manifest}"
+        done
     done
 fi
 
