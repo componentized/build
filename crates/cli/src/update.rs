@@ -482,7 +482,10 @@ mod tests {
         let text = text.replace('%', "@");
         Regex::new(r"sha256:([A-Za-z0-9.-]+)")
             .unwrap()
-            .replace_all(&text, |captures: &regex::Captures| format!("sha256:{:x}", Sha256::digest(&captures[1])))
+            .replace_all(&text, |captures: &regex::Captures| {
+                let hex: String = Sha256::digest(&captures[1]).iter().map(|byte| format!("{byte:02x}")).collect();
+                format!("sha256:{hex}")
+            })
             .into_owned()
     }
 
