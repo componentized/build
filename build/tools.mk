@@ -55,6 +55,18 @@ $(TOOLS_MK): $(TOOLS_MANIFESTS) build/pinned.jq
 	@echo "TOOLS_MANIFESTS_PINNED := $(TOOLS_MANIFESTS)" >> $@.tmp
 	@mv $@.tmp $@
 
+# the binaries that print shell completions and their arguments, read by build/scripts/completions.sh
+# as a shell starts, see [package.metadata.completions] in build/tools/Cargo.toml. Generated with the
+# tools, the repository's tools/Cargo.toml is read last, overriding the build's.
+TOOLS_COMPLETIONS := target/tools/completions
+
+tools: $(TOOLS_COMPLETIONS)
+
+$(TOOLS_COMPLETIONS): $(TOOLS_MANIFESTS) build/completions.jq
+	@mkdir -p $(@D)
+	@set -o pipefail; for manifest in $(TOOLS_MANIFESTS); do cargo metadata --manifest-path $$manifest --no-deps --format-version 1; done | jq -rs -f build/completions.jq > $@.tmp
+	@mv $@.tmp $@
+
 # the packages of the workspace, generated again when LOCAL_TOOLS changes. The workspace's members may
 # change without changing Cargo.toml or Cargo.lock, `make clean-tools` generates it again.
 $(LOCAL_TOOLS_MK): Cargo.toml Cargo.lock $(filter-out $(TOOLS_MK) $(LOCAL_TOOLS_MK),$(MAKEFILE_LIST)) build/local.jq

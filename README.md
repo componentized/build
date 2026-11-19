@@ -12,7 +12,7 @@ build/                     synced, never edited in the repository
   VERSION                  the release synced, e.g. v0.2.0
   MANIFEST                 a checksum of each synced file, checked by `make check-build`
   build.mk                 the targets every repository has, includes the other make files
-  tools.mk wit.mk components.mk publish.mk sync.mk pinned.jq local.jq
+  tools.mk wit.mk components.mk publish.mk sync.mk pinned.jq local.jq completions.jq
   tools/Cargo.toml         the tools the build provides, see Tools
   scripts/                 publish.sh, bump-version.sh, update-build.sh, ...
 .github/workflows/         ci.yaml, bump-version.yaml, release.yaml, update-build.yaml: synced
@@ -66,6 +66,15 @@ A repository changes a tool the build provides, or adds its own, without changin
 - **Built from the workspace**: name its package in `LOCAL_TOOLS`, e.g. `LOCAL_TOOLS := componentized-constants-cli` in componentized/constants, built from the repository's sources in place of the version the build provides.
 - **A binary built elsewhere**, to try a change: set its variable on the command line, e.g. `make WKG=../wkg/target/release/wkg`. The scripts the recipes run find the installed tools on the `PATH`.
 - **Its own tools**, e.g. `wasmtime-cli` for its tests: pin them in `tools/Cargo.toml` like an override. A repository with no tools of its own needs no `tools/Cargo.toml`, nor its dependabot entry.
+
+The tools complete in bash and zsh once their completions are registered at the shell's startup, after the tools are on the `PATH`:
+
+```sh
+PATH="$(make -s tools-path):${PATH}"
+source /path/to/repository/build/scripts/completions.sh
+```
+
+A binary that prints its completions is listed in `[package.metadata.completions]` with the arguments that print them, the shell's name appended, e.g. `wasm-tools = ["completion"]` for `wasm-tools completion bash`. The build lists those of the tools it provides, cosign too, and a repository lists its own tools in its `tools/Cargo.toml`, or overrides one of the build's, `[]` for none. `make tools` generates `target/tools/completions` from them, read as each shell starts, a tool not installed yet is skipped.
 
 ## Targets
 

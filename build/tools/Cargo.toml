@@ -26,6 +26,15 @@ wasm-opt = ["wasm-opt"]
 wasm-tools = ["wasm-tools"]
 wkg = ["wkg"]
 
+# the arguments of the binaries that print their shell completions, the shell's name is appended,
+# e.g. `wasm-tools completion bash`, registered by build/scripts/completions.sh. A binary installed
+# other than with cargo is listed too, e.g. cosign, see build/tools.mk. A repository adds its own
+# in its tools/Cargo.toml, or overrides one with `[]`, e.g. for a tool it builds without them.
+[package.metadata.completions]
+componentized-build = ["completions"]
+cosign = ["completion"]
+wasm-tools = ["completion"]
+
 [dependencies]
 cargo-cyclonedx = "=0.5.10"
 componentized-build-cli = "=0.1.6"
