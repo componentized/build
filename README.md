@@ -25,6 +25,8 @@ tools/Cargo.toml           repository-owned and optional, the repository's own t
 
 `make update-build` updates to the latest release, `make update-build BUILD_VERSION=v0.2.0` to a given one. It removes the files synced from the previous version, copies in the release's files, and writes `build/VERSION` and `build/MANIFEST`.
 
+A change not yet released is synced from a branch, tag, commit or other ref of componentized/build, e.g. `make update-build BUILD_VERSION=main` or `BUILD_VERSION=refs/pull/23/head`, recorded as its commit in `build/VERSION`. Without `BUILD_VERSION`, a repository synced from a commit stays on it until a release is newer: one that includes the commit, or, for a commit of a pull request merged by a squash, one committed after it.
+
 The `Update build` workflow does the same each week, and opens a pull request when there is a newer release, like dependabot. The pull request is created with the custodian GitHub App, the `GITHUB_TOKEN` can't change workflow files. The app needs the `contents`, `workflows` and `pull-requests` write permissions, and the `CUSTODIAN_CLIENT_ID` and `CUSTODIAN_PRIVATE_KEY` secrets must be available to the repository.
 
 The versions of the tools the build provides come with it, see [Tools](#tools). The update removes a tool the repository overrides in its `tools/Cargo.toml` once the build pins the same version or a newer one.
