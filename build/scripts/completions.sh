@@ -1,4 +1,7 @@
 # shellcheck shell=bash
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # Registers the shell completions of the installed tools, sourced by bash or zsh at startup once the
 # tools are on the PATH, e.g. in ~/.bashrc:
 #

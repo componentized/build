@@ -1,3 +1,6 @@
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # The versions of the cli tools the build provides, installed by `make tools` with cargo binstall.
 #
 # This package is never built, it lists the tools as dependencies so dependabot bumps them in

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # Install the binary of a cargo-binstall release, which can't install itself the way it installs the
 # other tools, see build/tools.mk.
 #

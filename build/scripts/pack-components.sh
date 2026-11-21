@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # Pack the components with an SBOM for each, the SBOM it's published with when it is, into a tar, e.g.
 # the components.tar of a release.
 #

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # Update the build synced from componentized/build to one of its releases.
 #
 #   build/scripts/update-build.sh [<version>]

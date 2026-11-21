@@ -1,3 +1,6 @@
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # generates target/tools/local.mk from `cargo metadata --no-deps` of the workspace, for the packages
 # named in $tools, LOCAL_TOOLS, see build/tools.mk
 .workspace_root as $root

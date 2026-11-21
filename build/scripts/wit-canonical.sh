@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # Print the WIT of a component in a canonical form, to compare the WIT of two components, e.g. the
 # release and debug build of a component.
 #

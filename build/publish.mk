@@ -1,3 +1,6 @@
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # sign published components with cosign, `SIGN=false` to push without signing, e.g. to a local registry
 SIGN ?= true
 # show what would be published without pushing or signing anything, `DRY_RUN=true`

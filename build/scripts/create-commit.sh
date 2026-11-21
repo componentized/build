@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # Create a commit of the staged changes with the GitHub REST API, signed by GitHub, for a GitHub App
 # token that can't push.
 #

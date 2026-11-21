@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # Bump the version of the wit interface package, and of the crates.
 #
 #   build/scripts/bump-version.sh <new-version>
