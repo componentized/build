@@ -40,8 +40,6 @@ endif
 # the toolchain file overrides the default
 RUST_TOOLCHAIN := $(shell sed -n 's/^channel *= *"\(.*\)"/\1/p' rust-toolchain.toml 2> /dev/null)
 
-# cargo binstall downloads prebuilt binaries, without it the tools are built with cargo install
-CARGO_INSTALL := $(if $(shell command -v cargo-binstall 2> /dev/null),cargo binstall --no-confirm --disable-telemetry,cargo install)
 
 .PHONY: clean-tools ## Remove the installed tools, installed again by `make tools`
 clean-tools:
@@ -92,10 +90,19 @@ tools: $(foreach name,$(sort $(TOOLS) $(LOCAL_TOOLS)),$(call tool,$(name)))
 tools-path:
 	@echo $(TOOLS_BIN)
 
+# installed first, it installs the others. The binary of the release for the host, see
+# build/scripts/install-cargo-binstall.sh, or else, for a host without one, built with cargo install.
+$(call tool,cargo-binstall): build/scripts/install-cargo-binstall.sh
+	build/scripts/install-cargo-binstall.sh $(call tool_version,cargo-binstall) $(abspath $(TOOLS_DIR)) $(notdir $(TOOLS_DIR)) \
+		|| cargo $(if $(RUST_TOOLCHAIN),+$(RUST_TOOLCHAIN)) install --locked --root $(TOOLS_DIR) --version $(call tool_version,cargo-binstall) cargo-binstall
+	@mkdir -p $(@D)
+	@rm -f $(@D)/cargo-binstall@*
+	@touch $@
+
 define INSTALL_TOOL
 
-$(call tool,$1):
-	$(CARGO_INSTALL) --locked --root $(TOOLS_DIR) --version $(call tool_version,$1) $1
+$(call tool,$1): | $(call tool,cargo-binstall)
+	$(CARGO_BINSTALL) --no-confirm --disable-telemetry --locked --root $(TOOLS_DIR) --version $(call tool_version,$1) $1
 	@mkdir -p $$(@D)
 	@# only the installed version has a stamp, so going back to a previous version installs it again
 	@rm -f $$(@D)/$1@*
@@ -103,7 +110,7 @@ $(call tool,$1):
 
 endef
 
-$(foreach name,$(filter-out $(LOCAL_TOOLS),$(TOOLS)),$(eval $(call INSTALL_TOOL,$(name))))
+$(foreach name,$(filter-out cargo-binstall $(LOCAL_TOOLS),$(TOOLS)),$(eval $(call INSTALL_TOOL,$(name))))
 
 define INSTALL_LOCAL_TOOL
 

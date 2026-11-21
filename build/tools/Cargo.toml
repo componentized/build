@@ -17,6 +17,7 @@ path = "lib.rs"
 # the binaries each tool installs, the Makefile runs each by path from a variable named after it,
 # e.g. `$(WASM_TOOLS)` for `wasm-tools`
 [package.metadata.bins]
+cargo-binstall = ["cargo-binstall"]
 cargo-cyclonedx = ["cargo-cyclonedx"]
 componentized-build-cli = ["componentized-build"]
 componentized-constants-cli = ["constants"]
@@ -31,11 +32,13 @@ wkg = ["wkg"]
 # other than with cargo is listed too, e.g. cosign, see build/tools.mk. A repository adds its own
 # in its tools/Cargo.toml, or overrides one with `[]`, e.g. for a tool it builds without them.
 [package.metadata.completions]
+cargo-binstall = ["--completions"]
 componentized-build = ["completions"]
 cosign = ["completion"]
 wasm-tools = ["completion"]
 
 [dependencies]
+cargo-binstall = "=1.27.0"
 cargo-cyclonedx = "=0.5.10"
 componentized-build-cli = "=0.1.6"
 componentized-constants-cli = "=0.2.0"

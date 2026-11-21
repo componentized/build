@@ -58,7 +58,7 @@ The variable `COMPONENTIZED_DIRECTORY_SCAN=true` asks [componentized/directory](
 
 ## Tools
 
-The build provides the tools its rules run, pinned in [`build/tools/Cargo.toml`](build/tools/Cargo.toml) and bumped by dependabot here: `cargo-cyclonedx`, `wac`, `wkg`, `wasm-opt`, `wasm-tools`, the `constants` and `static-config` clis, and `componentized-build`, see [Updating a dependency](#updating-a-dependency), run as `$(COMPONENTIZED_BUILD)`. It also provides `cosign`, a release binary pinned in [`build/tools.mk`](build/tools.mk) and checked against the release's checksums, which signs the published components, attests their SBOMs and verifies the SBOMs of the components pulled with wkg. `make tools` installs them in `target/tools`, with cargo binstall when it's installed, and a recipe runs each by path from a variable named after its binary, e.g. `$(WASM_TOOLS)`.
+The build provides the tools its rules run, pinned in [`build/tools/Cargo.toml`](build/tools/Cargo.toml) and bumped by dependabot here: `cargo-binstall`, `cargo-cyclonedx`, `wac`, `wkg`, `wasm-opt`, `wasm-tools`, the `constants` and `static-config` clis, and `componentized-build`, see [Updating a dependency](#updating-a-dependency), run as `$(COMPONENTIZED_BUILD)`. It also provides `cosign`, a release binary pinned in [`build/tools.mk`](build/tools.mk) and checked against the release's checksums, which signs the published components, attests their SBOMs and verifies the SBOMs of the components pulled with wkg. `make tools` installs them in `target/tools`, and a recipe runs each by path from a variable named after its binary, e.g. `$(WASM_TOOLS)`.
 
 A repository changes a tool the build provides, or adds its own, without changing the build:
 
