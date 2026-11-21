@@ -1,3 +1,6 @@
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # a path relative to the root of the repository, e.g. `wit` for `components/../wit`
 relpath = $(if $(filter $(CURDIR),$(abspath $(1))),.,$(patsubst $(CURDIR)/%,%,$(abspath $(1))))
 

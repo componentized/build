@@ -31,7 +31,7 @@ The versions of the tools the build provides come with it, see [Tools](#tools). 
 
 ### Drift
 
-The CI workflow runs `build/scripts/check-build.sh` first, which fails when a synced file was changed or removed, or a file was added to `build/`. Fix the build here rather than in the repository, so the repositories don't drift apart again.
+Each synced file starts with a `Managed by componentized/build` header, so it reads as one not to edit in the repository. The CI workflow runs `build/scripts/check-build.sh` first, which fails when a synced file was changed or removed, or a file was added to `build/`. Fix the build here rather than in the repository, so the repositories don't drift apart again.
 
 ## Settings
 
@@ -144,7 +144,7 @@ Pushes to main and tags go through publishing with nothing to publish, and the r
 
 ## Changing the build
 
-Change the files here, and check them with `make`. Then try the change in a repository before releasing it:
+Change the files here, and check them with `make`. A new synced file starts with the `Managed by componentized/build` header the others have, in its comment syntax and after a shebang, checked by `test/sync-test.sh`. Then try the change in a repository before releasing it:
 
 ```sh
 BUILD_SOURCE=../build make update-build

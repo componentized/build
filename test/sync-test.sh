@@ -57,6 +57,10 @@ while read -r path; do
     diff -r -x VERSION -x MANIFEST "$root/$path" "$repo/$path" > /dev/null || fail "$path differs from the build"
 done < "$root/SYNC"
 [[ -x "$repo/build/scripts/check-build.sh" ]] || fail "the scripts are not executable"
+# each synced file says near its top that it's managed by the build, to discourage editing a copy
+while read -r _ path; do
+    head -n 5 "$repo/$path" | grep -qF 'Managed by componentized/build' || fail "$path is missing the 'Managed by componentized/build' header"
+done < "$repo/build/MANIFEST"
 if grep -q '^wac-cli = ' "$repo/tools/Cargo.toml"; then fail "an override older than the build's was kept"; fi
 if grep -q '^wkg = ' "$repo/tools/Cargo.toml"; then fail "an override the same as the build's was kept"; fi
 grep -qxF 'wasm-tools = "=999.0.0"' "$repo/tools/Cargo.toml" || fail "an override newer than the build's was removed"

@@ -1,3 +1,6 @@
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # the release of componentized/build to update to, e.g. v0.2.0, the latest release by default
 BUILD_VERSION ?=
 

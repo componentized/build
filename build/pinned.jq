@@ -1,3 +1,6 @@
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # generates target/tools/pinned.mk from `cargo metadata --no-deps` of build/tools/Cargo.toml, the
 # tools the build provides, followed by that of the repository's tools/Cargo.toml when it has one,
 # slurped, see build/tools.mk. A tool pinned by the repository overrides the build's.

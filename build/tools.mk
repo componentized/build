@@ -1,3 +1,6 @@
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 TOOLS_DIR := target/tools/$(shell rustc --print host-tuple)
 # absolute, tools also run from other directories, e.g. `cd components && wkg fetch`
 TOOLS_BIN := $(abspath $(TOOLS_DIR))/bin

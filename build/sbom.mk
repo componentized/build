@@ -1,3 +1,6 @@
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # the SBOM of each component and of the interface, CycloneDX JSON beside the wasm file it describes,
 # e.g. target/components/greeter/greeter.cdx.json for greeter.wasm and greeter.debug.cdx.json for
 # greeter.debug.wasm, built with the components and published with them, see build/scripts/sbom.sh

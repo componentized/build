@@ -1,3 +1,6 @@
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # The build shared by the componentized repositories, synced from https://github.com/componentized/build
 # at the version in build/VERSION. Nothing in build/ is edited here, see build/README.md.
 #

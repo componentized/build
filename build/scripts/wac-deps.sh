@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # Encode each WIT package of a wit/deps directory where `wac compose --deps-dir` looks for it, so a
 # composition can name the interfaces of a package it does not instantiate, e.g.
 # `import stderr: wasi:cli/stderr@0.3.0;`.

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # Generate the CycloneDX SBOM of a component the build makes, or of the interface, from how it's made.
 #
 #   build/scripts/sbom.sh cargo <wasm> <out> <package sbom> <target>  a component built with cargo

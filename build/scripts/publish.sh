@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Managed by componentized/build and synced into each repository by `make update-build`. Change it
+# in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
+
 # Publish a built component to an OCI registry, sign it with cosign, and attest its SBOM.
 #
 #   VERSION=<version> REPOSITORY=<repository> build/scripts/publish.sh <file>
