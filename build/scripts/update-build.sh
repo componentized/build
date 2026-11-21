@@ -3,11 +3,11 @@
 # Managed by componentized/build and synced into each repository by `make update-build`. Change it
 # in https://github.com/componentized/build, `make check-build` fails when a copy is changed.
 
-# Update the build synced from componentized/build to one of its releases.
+# Update the build synced from componentized/build to one of its releases, or to a commit of it.
 #
 #   build/scripts/update-build.sh [<version>]
 #
-# Downloads the release, removes the files synced from the previous version, listed in
+# Downloads the release or commit, removes the files synced from the previous version, listed in
 # build/MANIFEST, copies in the files of the release, listed in its SYNC file, and records the
 # version in build/VERSION and a checksum of each file in build/MANIFEST, checked by
 # build/scripts/check-build.sh. The current version the repository keeps in a synced file, the
@@ -15,7 +15,12 @@
 # overrides is removed from it once the release's build/tools/Cargo.toml pins the same version or a
 # newer one.
 #
-# <version>         the release to update to, e.g. v0.2.0, the latest release by default
+# <version>         the release to update to, e.g. v0.2.0, or a branch, tag, commit or other ref of
+#                   the build's repository, e.g. main, 6f2b296 or refs/pull/23/head, recorded as its
+#                   commit in build/VERSION. The latest release by default, unless build/VERSION is a
+#                   commit newer than it, e.g. of main ahead of the latest release, which is kept: a
+#                   release is newer when it includes the commit, or when it diverged from the
+#                   commit, e.g. merged from a pull request by a squash, and was committed after it
 # BUILD_REPOSITORY  the GitHub repository of the build, defaults to componentized/build
 # BUILD_SOURCE      a checkout of the build repository to update from in place of a release, e.g. to
 #                   try a change before releasing it, recorded as its commit in build/VERSION
@@ -45,17 +50,62 @@ if [[ -n "$BUILD_SOURCE" ]]; then
 else
     auth=()
     [[ -n "${GH_TOKEN:-}" ]] && auth=(--header "Authorization: Bearer ${GH_TOKEN}")
+    # the GitHub API of the build's repository, e.g. `api releases/latest`
+    api() {
+        curl -fsSL ${auth[@]+"${auth[@]}"} "https://api.github.com/repos/${BUILD_REPOSITORY}/$1"
+    }
+    RELEASE_RE='^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
+    COMMIT_RE='^[0-9a-f]{40}$'
+
+    # whether a release is newer than a commit: it includes the commit, or diverged from it and was
+    # committed after it, e.g. a commit of a pull request merged by a squash. A commit the repository
+    # doesn't have, e.g. a local commit synced with BUILD_SOURCE, is older than any release.
+    newer() {
+        local compare status
+        if ! compare=$(api "compare/$2...$1" 2> /dev/null); then
+            echo "unable to compare ${BUILD_REPOSITORY} $2 to $1" >&2
+            return 0
+        fi
+        status=$(jq -r .status <<< "$compare")
+        case "$status" in
+            ahead | identical) return 0 ;;
+            behind) return 1 ;;
+            diverged)
+                [[ "$(api "commits/$1" | jq -r .commit.committer.date)" > "$(jq -r .base_commit.commit.committer.date <<< "$compare")" ]]
+                ;;
+            *)
+                echo "unable to compare ${BUILD_REPOSITORY} $2 to $1, ${status}" >&2
+                exit 1
+                ;;
+        esac
+    }
+
     if [[ -z "$version" ]]; then
-        version=$(curl -fsSL ${auth[@]+"${auth[@]}"} "https://api.github.com/repos/${BUILD_REPOSITORY}/releases/latest" | jq -r .tag_name)
+        version=$(api releases/latest | jq -r .tag_name)
+        # the commit synced, e.g. of main, or from a checkout, which may be dirty
+        current=$(cat build/VERSION 2> /dev/null || true)
+        current="${current%+dirty}"
+        if [[ "$current" =~ $COMMIT_RE ]] && ! newer "$version" "$current"; then
+            echo "the build is ${BUILD_REPOSITORY} ${current}, newer than its latest release ${version}"
+            exit
+        fi
     fi
-    if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-        echo "the version '${version}' is not a release of ${BUILD_REPOSITORY}, e.g. v0.2.0" >&2
-        exit 1
+    if [[ "$version" =~ $RELEASE_RE ]]; then
+        archive="refs/tags/${version}"
+    else
+        # a branch, tag, commit or other ref, recorded as its commit, e.g. main or refs/pull/23/head
+        if [[ ! "$version" =~ ^[0-9A-Za-z._/-]+$ ]] || ! commit=$(api "commits/${version}" 2> /dev/null | jq -er .sha); then
+            echo "unable to find '${version}' in ${BUILD_REPOSITORY}, a release, e.g. v0.2.0, or a branch, tag, commit or ref, e.g. main" >&2
+            exit 1
+        fi
+        [[ "$commit" != "$version" ]] && echo "${version} is ${BUILD_REPOSITORY} ${commit}"
+        version="$commit"
+        archive="$commit"
     fi
     source="$work/source"
     mkdir -p "$source"
     echo "downloading ${BUILD_REPOSITORY} ${version}"
-    curl -fsSL "https://github.com/${BUILD_REPOSITORY}/archive/refs/tags/${version}.tar.gz" | tar -xz --strip-components 1 -C "$source"
+    curl -fsSL "https://github.com/${BUILD_REPOSITORY}/archive/${archive}.tar.gz" | tar -xz --strip-components 1 -C "$source"
 fi
 
 if [[ ! -f "$source/SYNC" ]]; then
