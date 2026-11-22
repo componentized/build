@@ -17,7 +17,7 @@
 #     published SBOM, it's the same file, e.g. defaults.debug.wasm's is defaults.wasm's
 #   - otherwise the SBOM of the build, for a file that isn't published, e.g. a component pulled with
 #     wkg, whose SBOM is the one it's published with where cosign verifies it, see
-#     build/scripts/sbom.sh, or an internal- or test- component
+#     build/scripts/sbom.sh, or an internal component
 #
 # The components directory isn't changed, the tar is packed from a copy of it.
 

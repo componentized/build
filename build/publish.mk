@@ -13,9 +13,11 @@ PUBLISH_LOG ?=
 PUBLISH_INTERFACE ?= true
 
 # the files that can be published, e.g. gate.wasm, published from target/components/gate/gate.wasm.
-# Components are not published when they are pulled from elsewhere, `dep-`, built here for use by
-# other components, `internal-`, or tests, `test-`.
-PUBLISH_FILES := $(if $(filter true,$(PUBLISH_INTERFACE)),interface.wasm) $(foreach component,$(filter-out dep-% internal-% test-%,$(COMPONENTS)),$(component).wasm $(component).debug.wasm)
+# Components are not published when they are pulled from elsewhere, `dep`, built here for use by
+# other components, `internal`, or tests, `test`, named with it as a prefix or a suffix, e.g.
+# `test-greeter` or `greeter-test`.
+UNPUBLISHED_COMPONENTS ?= $(foreach kind,dep internal test,$(kind)-% %-$(kind))
+PUBLISH_FILES := $(if $(filter true,$(PUBLISH_INTERFACE)),interface.wasm) $(foreach component,$(filter-out $(UNPUBLISHED_COMPONENTS),$(COMPONENTS)),$(component).wasm $(component).debug.wasm)
 
 .PHONY: publish ## Publish each component in the target/components directory, `make publish-<file>` publishes one, e.g. publish-gate.wasm
 publish: $(addprefix publish-,$(PUBLISH_FILES))
