@@ -21,10 +21,13 @@ export WKG_CACHE_DIR := $(abspath target/wkg-cache)
 
 # runs wkg with the arguments in the directory with a wkg.toml, e.g. `$(call wkg,components,fetch)`.
 # wkg rewrites wkg.lock even when nothing changed, which would leave everything made from the lock
-# looking out of date, so the lock is put back as it was, with its time, when its content is unchanged
-wkg = cp -p $(1)/wkg.lock $(1)/wkg.lock.orig && \
+# looking out of date, so the lock is put back as it was, with its time, when its content is unchanged. A
+# missing lock is tolerated, wkg writes it.
+wkg = if [ -f $(1)/wkg.lock ]; then cp -p $(1)/wkg.lock $(1)/wkg.lock.orig; fi && \
 	(cd $(1) && $(WKG) $(2)); status=$$?; \
-	if cmp -s $(1)/wkg.lock.orig $(1)/wkg.lock; then mv $(1)/wkg.lock.orig $(1)/wkg.lock; else rm $(1)/wkg.lock.orig; fi; \
+	if [ -f $(1)/wkg.lock.orig ]; then \
+		if cmp -s $(1)/wkg.lock.orig $(1)/wkg.lock; then mv $(1)/wkg.lock.orig $(1)/wkg.lock; else rm $(1)/wkg.lock.orig; fi; \
+	fi; \
 	exit $$status
 
 .PHONY: clean-wit ## Remove the fetched wit dependencies and the wkg cache, fetched again by `make wit`
@@ -40,8 +43,9 @@ define FETCH_WIT
 # the fetch changed nothing in them
 #
 # a package overridden with a local path, e.g. `{ path = "../wit" }`, has its dependencies fetched first,
-# an override without dependencies of its own is skipped, e.g. `{ path = "./wit/overrides/wasi-muppets" }`
-$(call wit_deps,$1): $1/wkg.toml $1/wkg.lock $(shell find $1/wit -type f -name "*.wit" -not -path "*/deps/*") $(filter $(WIT_DEPS),$(foreach path,$(shell sed -n 's/.*path *= *"\(.*\)".*/\1/p' $1/wkg.toml),$(call relpath,$1/$(path))/deps)) | $(call tool,wkg)
+# an override without dependencies of its own is skipped, e.g. `{ path = "./wit/overrides/wasi-muppets" }`.
+# The lock is optional, the fetch writes it.
+$(call wit_deps,$1): $1/wkg.toml $(wildcard $1/wkg.lock) $(shell find $1/wit -type f -name "*.wit" -not -path "*/deps/*") $(filter $(WIT_DEPS),$(foreach path,$(shell sed -n 's/.*path *= *"\(.*\)".*/\1/p' $1/wkg.toml),$(call relpath,$1/$(path))/deps)) | $(call tool,wkg)
 	$$(call wkg,$1,fetch)
 	@touch $(call wit_deps,$1)
 

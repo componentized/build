@@ -92,5 +92,6 @@ endef
 
 $(foreach component,$(COMPONENTS),$(eval $(call BUILD_SBOM,$(component))))
 
-${COMPONENTS_DIR}/interface.cdx.json: ${COMPONENTS_DIR}/interface.wasm wkg.lock build/scripts/sbom.sh
+# wkg.lock is optional, written when the interface is built
+${COMPONENTS_DIR}/interface.cdx.json: ${COMPONENTS_DIR}/interface.wasm $(wildcard wkg.lock) build/scripts/sbom.sh
 	$(call sbom,interface,$<,$@,wkg.lock)

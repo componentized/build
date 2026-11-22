@@ -323,8 +323,10 @@ case "$kind" in
         ;;
     interface)
         lock="${1:?the wkg.lock is undefined}"
-        # each version of each package in wkg.lock, a line of its name, registry, version and digest
-        packages=$(awk '
+        # each version of each package in wkg.lock, a line of its name, registry, version and digest. A
+        # missing lock has no packages, e.g. an interface without dependencies.
+        packages=""
+        [[ -f "$lock" ]] && packages=$(awk '
             /^\[\[packages\]\]/ { name = ""; registry = "" }
             /^name = / { gsub(/"/, "", $3); name = $3 }
             /^registry = / { gsub(/"/, "", $3); registry = $3 }

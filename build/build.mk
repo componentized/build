@@ -15,7 +15,11 @@ SHELL := /bin/bash
 
 export RUST_BACKTRACE ?= 1
 export WASMTIME_BACKTRACE_DETAILS ?= 1
-export WKG_CONFIG_FILE := $(abspath .config/wasm-pkg/config.toml)
+# the repository's wkg config, e.g. the registry of each namespace, optional: without one wkg uses its
+# own, the user's config or its defaults. wkg fails when WKG_CONFIG_FILE names a missing file.
+ifneq ($(wildcard .config/wasm-pkg/config.toml),)
+export WKG_CONFIG_FILE ?= $(abspath .config/wasm-pkg/config.toml)
+endif
 
 # `make` without a goal runs all, otherwise the first target of an included file would run
 .DEFAULT_GOAL := all
