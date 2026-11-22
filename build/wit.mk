@@ -13,6 +13,12 @@ wit_deps = $(patsubst ./%,%,$(1)/wit/deps)
 
 WIT_DEPS := $(foreach dir,$(WKG_DIRS),$(call wit_deps,$(dir)))
 
+# the prerequisites of what's made from WIT paths, relative to the repository, e.g. `components/wit`:
+# a directory's deps, when a wkg.toml beside the directory fetches them, otherwise its files, e.g. a
+# directory without a wkg.toml, implicitly up to date, or one updated by another tool. A path that
+# doesn't exist has none.
+wit_prerequisites = $(foreach path,$(1),$(if $(filter $(path)/deps,$(WIT_DEPS)),$(path)/deps,$(shell find $(path) -type f 2> /dev/null)))
+
 # the cache wkg fetches packages into, in place of the system cache. wkg caches a package by its
 # version, so a dev version fetched again would come from the cache, stale, rather than the registry.
 # Exported for every wkg the build runs, absolute as wkg also runs in other directories, e.g.

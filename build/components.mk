@@ -3,11 +3,27 @@
 
 COMPONENTS_DIR := target/components
 
-# the WIT packages of components/wit/deps, encoded where `wac compose` looks for a package a
+# the WIT packages of components/wit/deps, when it has any, encoded where `wac compose` looks for a package a
 # composition names without instantiating it, e.g. `import stderr: wasi:cli/stderr@0.3.0;`
 WAC_DEPS_DIR := target/wac-deps
 
 COMPONENTS = $(sort $(foreach file,$(wildcard $(addprefix components/*/,wit/*.constants.wit *.properties *.wac *.plug *.wkg Cargo.toml)),$(word 2,$(subst /, ,$(file)))))
+
+# the WIT paths of the wit_bindgen::generate! of each component with a Cargo.toml, in its sources and
+# in those of the workspace crates it depends on, e.g. a crate of shared bindings, see
+# build/scripts/wit-paths.sh. Defines WIT_BINDGEN_PATHS_<component>. Generated when a Rust source or
+# the workspace changes, make restarts after generating it.
+CARGO_COMPONENTS := $(sort $(foreach file,$(wildcard components/*/Cargo.toml),$(word 2,$(subst /, ,$(file)))))
+WIT_PATHS_MK := target/wit-paths.mk
+ifneq ($(CARGO_COMPONENTS),)
+# quietly, the first time make generates it before reading it
+-include $(WIT_PATHS_MK)
+endif
+
+$(WIT_PATHS_MK): Cargo.toml Cargo.lock $(wildcard components/*/Cargo.toml) build/scripts/wit-paths.sh $(shell find . -name '*.rs' -not -path '*/target/*' -not -path '*/deps/*')
+	@mkdir -p $(@D)
+	@build/scripts/wit-paths.sh $(CARGO_COMPONENTS) > $@.tmp
+	@mv $@.tmp $@
 
 # the cargo profiles components are built with, `component` and `component-debug` when Cargo.toml
 # defines them, e.g. to build smaller components than the release profile a cli is built with
@@ -99,10 +115,10 @@ validate-components/$1: ${COMPONENTS_DIR}/$1/$1.wasm | $(call tool,wasm-tools)
 
 ifneq ($(wildcard components/$1/wit/$1.constants.wit),)
 
-${COMPONENTS_DIR}/$1/$1.wasm: components/$1/wit/deps ${COMPONENTS_DIR}/$1/README.md $(call tool_prerequisite,componentized-constants-cli)
+${COMPONENTS_DIR}/$1/$1.wasm: $(call wit_prerequisites,components/$1/wit) ${COMPONENTS_DIR}/$1/README.md $(call tool_prerequisite,componentized-constants-cli)
 	$(CONSTANTS) --wit components/$1/wit -o ${COMPONENTS_DIR}/$1/$1.wasm
 
-${COMPONENTS_DIR}/$1/$1.debug.wasm: components/$1/wit/deps ${COMPONENTS_DIR}/$1/README.md $(call tool_prerequisite,componentized-constants-cli)
+${COMPONENTS_DIR}/$1/$1.debug.wasm: $(call wit_prerequisites,components/$1/wit) ${COMPONENTS_DIR}/$1/README.md $(call tool_prerequisite,componentized-constants-cli)
 	$(CONSTANTS) --wit components/$1/wit -o ${COMPONENTS_DIR}/$1/$1.debug.wasm
 
 else ifneq ($(wildcard components/$1/$1.properties),)
@@ -155,7 +171,12 @@ ${COMPONENTS_DIR}/$1/$1.debug.wasm: components/$1/$1.wkg ${COMPONENTS_DIR}/$1/RE
 # cargo is checked last, other strategies may have a Cargo.toml for tests of non-rust sources
 else ifneq ($(wildcard components/$1/Cargo.toml),)
 
-${COMPONENTS_DIR}/$1/$1.wasm: $(CARGO_COMPONENT_DEPS) Cargo.toml Cargo.lock components/wit/deps $(shell find components/$1 -type f) $(shell find crates -type f 2> /dev/null) ${COMPONENTS_DIR}/$1/README.md | $(call tool,wasm-tools) $(if $(call component_optimize,$1),$(call tool,wasm-opt)) $(if $(filter wasm32-wasip3,$(call component_target,$1)),$(WASI_SDK) $(WASI_LIBC))
+# the WIT the bindings are generated from, the path of each wit_bindgen::generate! of the component
+# and the workspace crates it depends on, e.g. `path: "../wit"` for components/wit, or else
+# components/wit, e.g. bindings generated other than with wit-bindgen's macro
+WIT_PATHS_$1 := $$(foreach path,$$(or $$(WIT_BINDGEN_PATHS_$1),$$(wildcard components/wit)),$$(call relpath,$$(path)))
+
+${COMPONENTS_DIR}/$1/$1.wasm: $(CARGO_COMPONENT_DEPS) Cargo.toml Cargo.lock $$(call wit_prerequisites,$$(WIT_PATHS_$1)) $(shell find components/$1 -type f) $(shell find crates -type f 2> /dev/null) ${COMPONENTS_DIR}/$1/README.md | $(call tool,wasm-tools) $(if $(call component_optimize,$1),$(call tool,wasm-opt)) $(if $(filter wasm32-wasip3,$(call component_target,$1)),$(WASI_SDK) $(WASI_LIBC))
 	cargo build -p $1 --target $(call component_target,$1) --profile $(COMPONENT_PROFILE)
 ifneq ($(call component_optimize,$1),)
 	$(WASM_OPT) -Oz $(WASM_OPT_FEATURES) $(call cargo_wasm,$1,$(COMPONENT_PROFILE)) -o $(call cargo_wasm,$1,$(COMPONENT_PROFILE),.opt)
@@ -164,7 +185,7 @@ else
 	$(call componentize,$1,$(call cargo_wasm,$1,$(COMPONENT_PROFILE)),${COMPONENTS_DIR}/$1/$1.wasm)
 endif
 
-${COMPONENTS_DIR}/$1/$1.debug.wasm: $(CARGO_COMPONENT_DEPS) Cargo.toml Cargo.lock components/wit/deps $(shell find components/$1 -type f) $(shell find crates -type f 2> /dev/null) ${COMPONENTS_DIR}/$1/README.md | $(call tool,wasm-tools) $(if $(filter wasm32-wasip3,$(call component_target,$1)),$(WASI_SDK) $(WASI_LIBC))
+${COMPONENTS_DIR}/$1/$1.debug.wasm: $(CARGO_COMPONENT_DEPS) Cargo.toml Cargo.lock $$(call wit_prerequisites,$$(WIT_PATHS_$1)) $(shell find components/$1 -type f) $(shell find crates -type f 2> /dev/null) ${COMPONENTS_DIR}/$1/README.md | $(call tool,wasm-tools) $(if $(filter wasm32-wasip3,$(call component_target,$1)),$(WASI_SDK) $(WASI_LIBC))
 	cargo build -p $1 --target $(call component_target,$1) --profile $(COMPONENT_DEBUG_PROFILE)
 	$(call componentize,$1,$(call cargo_wasm,$1,$(COMPONENT_DEBUG_PROFILE)),${COMPONENTS_DIR}/$1/$1.debug.wasm)
 
@@ -178,7 +199,7 @@ endef
 
 $(foreach component,$(COMPONENTS),$(eval $(call BUILD_COMPONENT,$(component))))
 
-${WAC_DEPS_DIR}: components/wit/deps build/scripts/wac-deps.sh | $(call tool,wasm-tools)
+${WAC_DEPS_DIR}: $(call wit_prerequisites,components/wit) build/scripts/wac-deps.sh | $(call tool,wasm-tools)
 	WASM_TOOLS=$(WASM_TOOLS) build/scripts/wac-deps.sh components/wit/deps ${WAC_DEPS_DIR}
 
 ${COMPONENTS_DIR}/interface.wasm: wit/deps README.md | $(call tool,wkg)
