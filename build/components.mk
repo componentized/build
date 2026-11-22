@@ -218,6 +218,9 @@ components_in = $(foreach component,$(COMPONENTS),$(if $(filter $(1) $(1)/%,$(CO
 define COMPONENT_DIR_TARGET
 .PHONY: $1
 $1: $(foreach component,$(call components_in,$1),$(foreach build,$(component) $(component).debug,${COMPONENTS_DIR}/$(component)/$(build).wasm ${COMPONENTS_DIR}/$(component)/$(build).cdx.json))
+
+.PHONY: $1/
+$1/: $1
 endef
 
 $(foreach dir,$(COMPONENT_DIR_TARGETS),$(eval $(call COMPONENT_DIR_TARGET,$(dir))))
