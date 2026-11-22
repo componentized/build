@@ -80,7 +80,7 @@ WASM_OPT_FEATURES ?= --enable-bulk-memory --enable-multivalue --enable-mutable-g
 clean-components: clean-wit
 	rm -rf ${COMPONENTS_DIR} ${WAC_DEPS_DIR}
 
-.PHONY: components ## Build the interface and each component into target/components, `make components/<name>` builds one
+.PHONY: components ## Build the interface and each component into target/components, `make components/<name>` builds one, `make <dir>` those in a directory, e.g. `make examples`
 components: ${COMPONENTS_DIR}/interface.wasm $(foreach component,$(COMPONENTS),${COMPONENTS_DIR}/$(component)/$(component).wasm ${COMPONENTS_DIR}/$(component)/$(component).debug.wasm)
 
 # the components whose release and debug builds may have different WIT, not checked by `make
@@ -200,6 +200,23 @@ ${COMPONENTS_DIR}/$1/README.md: $(COMPONENT_DIR_$1)/README.md
 endef
 
 $(foreach component,$(COMPONENTS),$(eval $(call BUILD_COMPONENT,$(component))))
+
+# a target for each directory of components and each component's directory, building the components
+# in it and under it, with their SBOMs, e.g. `make examples`, or `make components/gate` for gate and
+# its group, gate-internal and gate-config. A directory of components is the directory of a
+# component that isn't in another component's, e.g. examples for examples/hello. `make components`
+# builds every component, those of components/ and of every other directory of components.
+COMPONENT_DIR_TARGETS := $(filter-out .,$(sort $(foreach component,$(COMPONENTS),$(COMPONENT_DIR_$(component)) $(patsubst %/,%,$(dir $(COMPONENT_DIR_$(component)))))))
+
+# the components in a directory or under it, e.g. `$(call components_in,components/gate)`
+components_in = $(foreach component,$(COMPONENTS),$(if $(filter $(1) $(1)/%,$(COMPONENT_DIR_$(component))),$(component)))
+
+define COMPONENT_DIR_TARGET
+.PHONY: $1
+$1: $(foreach component,$(call components_in,$1),$(foreach build,$(component) $(component).debug,${COMPONENTS_DIR}/$(component)/$(build).wasm ${COMPONENTS_DIR}/$(component)/$(build).cdx.json))
+endef
+
+$(foreach dir,$(COMPONENT_DIR_TARGETS),$(eval $(call COMPONENT_DIR_TARGET,$(dir))))
 
 ${WAC_DEPS_DIR}: $(call wit_prerequisites,components/wit) build/scripts/wac-deps.sh | $(call tool,wasm-tools)
 	WASM_TOOLS=$(WASM_TOOLS) build/scripts/wac-deps.sh components/wit/deps ${WAC_DEPS_DIR}

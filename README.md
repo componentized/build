@@ -54,6 +54,8 @@ components/gate/
 
 A component built with cargo builds the package its `Cargo.toml` names, which may differ from the component's name. Two components with the same name are an error, e.g. `components/hello` and `examples/hello` without a prefix. See [`build/scripts/components.sh`](build/scripts/components.sh).
 
+`make <dir>` builds the components in a directory and under it, with their SBOMs: a directory of components, e.g. `make examples`, or a component's, e.g. `make components/gate` for `gate`, `gate-internal` and `gate-config`. `make components` builds every component, in every directory of components, and the interface.
+
 ## Settings
 
 The repository's `Makefile` sets these before `include build/build.mk`. Each has a default that fits most repositories, detected where it can be.
