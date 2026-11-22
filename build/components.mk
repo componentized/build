@@ -201,12 +201,16 @@ endef
 
 $(foreach component,$(COMPONENTS),$(eval $(call BUILD_COMPONENT,$(component))))
 
-# a target for each directory of components and each component's directory, building the components
-# in it and under it, with their SBOMs, e.g. `make examples`, or `make components/gate` for gate and
-# its group, gate-internal and gate-config. A directory of components is the directory of a
-# component that isn't in another component's, e.g. examples for examples/hello. `make components`
-# builds every component, those of components/ and of every other directory of components.
-COMPONENT_DIR_TARGETS := $(filter-out .,$(sort $(foreach component,$(COMPONENTS),$(COMPONENT_DIR_$(component)) $(patsubst %/,%,$(dir $(COMPONENT_DIR_$(component)))))))
+# a target for each directory holding components, a component's directory and each directory it's in,
+# building the components in it and under it, with their SBOMs, e.g. `make examples`, `make
+# components/gate` for gate and its group, gate-internal and gate-config, or `make components/deps`
+# for those of components/deps/componentized/components.toml. `make components` builds every
+# component, those of components/ and of every other directory of components.
+COMPONENT_DIR_TARGETS = $(sort $(foreach component,$(COMPONENTS),$(call dir_ancestors,$(COMPONENT_DIR_$(component)))))
+
+# a directory and each directory it's in, but the repository's, e.g. components/gate/internal,
+# components/gate and components for components/gate/internal
+dir_ancestors = $(if $(filter-out .,$(1)),$(1) $(call dir_ancestors,$(patsubst %/,%,$(dir $(1)))))
 
 # the components in a directory or under it, e.g. `$(call components_in,components/gate)`
 components_in = $(foreach component,$(COMPONENTS),$(if $(filter $(1) $(1)/%,$(COMPONENT_DIR_$(component))),$(component)))
