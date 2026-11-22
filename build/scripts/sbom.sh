@@ -98,6 +98,9 @@ case "$kind" in
     cargo)
         package_sbom="${1:?the SBOM of the package is undefined}"
         target="${2:?the target the component is built for is undefined}"
+        # the component's package, the SBOM is named for it, e.g. greeter.cdx.json, which may differ
+        # from the component's name, e.g. hello for example-hello
+        package=$(basename "$package_sbom" .cdx.json)
 
         # the Rust standard library, of the toolchain the repository pins, by the commit of rustc
         rustc=$(rustc -vV)
@@ -148,7 +151,7 @@ case "$kind" in
         # the package and its normal dependencies for the target, without the proc-macros and the
         # crates only they depend on, e.g. syn and wit-parser, which run as it's compiled
         runtime=$(
-            cargo tree --quiet --locked -p "$component" --target "$target" -e normal,no-proc-macro --prefix none --format '{p}' \
+            cargo tree --quiet --locked -p "$package" --target "$target" -e normal,no-proc-macro --prefix none --format '{p}' \
                 | sed -E 's/ \(.*//; s/ v/@/' \
                 | sort -u \
                 | jq -R . | jq -s .

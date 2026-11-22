@@ -35,6 +35,25 @@ The versions of the tools the build provides come with it, see [Tools](#tools). 
 
 Each synced file starts with a `Managed by componentized/build` header, so it reads as one not to edit in the repository. The CI workflow runs `build/scripts/check-build.sh` first, which fails when a synced file was changed or removed, or a file was added to `build/`. Fix the build here rather than in the repository, so the repositories don't drift apart again.
 
+## Components
+
+Each component is a directory in a directory of components, with the files of one named for its directory: `wit/<dir>.constants.wit`, `<dir>.properties`, `<dir>.wac`, `<dir>.plug`, `<dir>.wkg`, or a `Cargo.toml`. `components/` is a directory of components, and so is each directory with a `components.toml`, which names the prefix of its components, e.g. `examples/components.toml`:
+
+```toml
+prefix = "example-"
+```
+
+A component is named for the prefix and its directory, and built into `target/components/<name>/`, e.g. `examples/hello/hello.wac` is `example-hello`, which composes components of `components/` as `local:<name>`. A component's directories that are components are a group, named for it, e.g. an internal component, its configuration, and their composition:
+
+```
+components/gate/
+  gate.wac       gate, composing local:gate-internal and local:gate-config
+  internal/      gate-internal, not published, see UNPUBLISHED_COMPONENTS
+  config/        gate-config
+```
+
+A component built with cargo builds the package its `Cargo.toml` names, which may differ from the component's name. Two components with the same name are an error, e.g. `components/hello` and `examples/hello` without a prefix. See [`build/scripts/components.sh`](build/scripts/components.sh).
+
 ## Settings
 
 The repository's `Makefile` sets these before `include build/build.mk`. Each has a default that fits most repositories, detected where it can be.

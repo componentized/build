@@ -33,14 +33,30 @@ endif
 #   target = "wasm32-wasip3"
 COMPONENT_TARGET ?= wasm32-unknown-unknown
 
+# the components and their directories, each `<name>=<dir>`, e.g. `example-hello=examples/hello`, found
+# in components/ and each directory with a components.toml naming the prefix of its components, see
+# build/scripts/components.sh. Read once while parsing, defines COMPONENTS, and for each component
+# COMPONENT_DIR_<component>, its directory, and COMPONENT_BASE_<component>, the name of its directory
+# its files are named for, e.g. hello for examples/hello/hello.wac
+COMPONENT_DIRS := $(shell build/scripts/components.sh | tr ' ' '=')
+COMPONENTS := $(sort $(foreach entry,$(COMPONENT_DIRS),$(firstword $(subst =, ,$(entry)))))
+$(foreach name,$(COMPONENTS),$(if $(word 2,$(filter $(name)=%,$(COMPONENT_DIRS))),$(error the component $(name) is in more than one directory, $(patsubst $(name)=%,%,$(filter $(name)=%,$(COMPONENT_DIRS))), rename one or give its directory of components a prefix, see build/scripts/components.sh)))
+$(foreach entry,$(COMPONENT_DIRS),$(eval COMPONENT_DIR_$(firstword $(subst =, ,$(entry))) := $(lastword $(subst =, ,$(entry)))))
+$(foreach name,$(COMPONENTS),$(eval COMPONENT_BASE_$(name) := $(notdir $(COMPONENT_DIR_$(name)))))
+
+# the components built with cargo, those with a Cargo.toml, and their packages, CARGO_PACKAGE_<component>,
+# named in their Cargo.toml, e.g. examples/hello's may be example-hello, or hello
+CARGO_COMPONENTS := $(foreach name,$(COMPONENTS),$(if $(wildcard $(COMPONENT_DIR_$(name))/Cargo.toml),$(name)))
+$(foreach name,$(CARGO_COMPONENTS),$(eval CARGO_PACKAGE_$(name) := $(shell sed -n '/^\[package\]/,/^\[/s/^name *= *"\(.*\)"/\1/p' $(COMPONENT_DIR_$(name))/Cargo.toml)))
+
 # read once while parsing, defines COMPONENT_TARGET_<component> for those that name one
-$(foreach file,$(wildcard components/*/Cargo.toml),$(eval COMPONENT_TARGET_$(word 2,$(subst /, ,$(file))) := $(shell sed -n '/^\[package\.metadata\.componentized\]/,/^\[/s/^target *= *"\(.*\)"/\1/p' $(file))))
+$(foreach name,$(CARGO_COMPONENTS),$(eval COMPONENT_TARGET_$(name) := $(shell sed -n '/^\[package\.metadata\.componentized\]/,/^\[/s/^target *= *"\(.*\)"/\1/p' $(COMPONENT_DIR_$(name))/Cargo.toml)))
 
 # the rust target a component is built for, e.g. `$(call component_target,trace)`
 component_target = $(if $(filter command line,$(origin COMPONENT_TARGET)),$(COMPONENT_TARGET),$(or $(COMPONENT_TARGET_$(1)),$(COMPONENT_TARGET)))
 
 # the targets the components built with cargo are built for
-COMPONENT_TARGETS = $(sort $(foreach file,$(wildcard components/*/Cargo.toml),$(call component_target,$(word 2,$(subst /, ,$(file))))))
+COMPONENT_TARGETS = $(sort $(foreach name,$(CARGO_COMPONENTS),$(call component_target,$(name))))
 
 # the cli built from this repository, e.g. `constants`, released with an archive for each platform by
 # the CI workflow. Empty for a repository without a cli.
