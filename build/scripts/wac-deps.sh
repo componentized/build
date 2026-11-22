@@ -27,7 +27,9 @@ trap 'rm -rf "$work"' EXIT
 rm -rf "$out"
 mkdir -p "$out"
 
+# a missing directory, e.g. one without a wkg.toml to fetch it, has no packages
 for package in "$deps"/*/; do
+  [[ -d "$package" ]] || continue
   package=${package%/}
   rm -rf "$work/package"
   mkdir -p "$work/package/deps"

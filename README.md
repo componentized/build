@@ -83,6 +83,8 @@ A binary that prints its completions is listed in `[package.metadata.completions
 
 `make` runs `tools`, `generate`, `components` and `test`. Other targets: `wit`, `publish`, `tools-path`, `clean`, `clean-all`, `update-build`, `check-build`, `print-<variable>`.
 
+`make wit` fetches the dependencies of each directory with a `wkg.toml` into its `wit/deps`. A component cargo builds depends on the WIT its bindings are generated from, the `path` of each `wit_bindgen::generate!` in its sources and in those of the workspace crates it depends on by path, e.g. a crate of bindings components share, relative to the manifest of the crate with the macro, `wit` by default, or `components/wit` when there is none, found by [`build/scripts/wit-paths.sh`](build/scripts/wit-paths.sh) into `target/wit-paths.mk`. A WIT directory without a `wkg.toml` beside it is up to date as it is, e.g. one another tool updates, and its files are the prerequisites.
+
 A repository extends a target by adding prerequisites after the include, make merges them with the target's own:
 
 | Target | Run by | Extended with, e.g. |
