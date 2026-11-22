@@ -55,7 +55,7 @@ visit() {
 
 {
     [[ -d components ]] && echo components
-    find . -name components.toml -not -path '*/target/*' -not -path '*/deps/*' -not -path './.git/*' \
+    find . -name components.toml -not -path '*/target/*' -not -path '*/wit/deps/*' -not -path './.git/*' \
         | sed 's|^\./||; s|^components.toml$|.|; s|/components.toml$||'
 } | sort -u | while read -r dir; do
     visit "$dir" "$(prefix_of "$dir")"

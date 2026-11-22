@@ -6,7 +6,7 @@ relpath = $(if $(filter $(CURDIR),$(abspath $(1))),.,$(patsubst $(CURDIR)/%,%,$(
 
 # directories with a wkg.toml, each fetches the dependencies of its wit directory into wit/deps,
 # e.g. `.` and `components`
-WKG_DIRS := $(sort $(patsubst ./%,%,$(patsubst %/,%,$(dir $(shell find . -name wkg.toml -not -path './target/*' -not -path '*/deps/*')))))
+WKG_DIRS := $(sort $(patsubst ./%,%,$(patsubst %/,%,$(dir $(shell find . -name wkg.toml -not -path './target/*' -not -path '*/wit/deps/*')))))
 
 # the wit/deps directory of a directory with a wkg.toml, e.g. `wit/deps` for `.`
 wit_deps = $(patsubst ./%,%,$(1)/wit/deps)

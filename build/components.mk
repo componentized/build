@@ -21,7 +21,7 @@ ifneq ($(CARGO_COMPONENTS),)
 -include $(WIT_PATHS_MK)
 endif
 
-$(WIT_PATHS_MK): Cargo.toml Cargo.lock $(foreach name,$(CARGO_COMPONENTS),$(COMPONENT_DIR_$(name))/Cargo.toml) build/scripts/wit-paths.sh $(shell find . -name '*.rs' -not -path '*/target/*' -not -path '*/deps/*')
+$(WIT_PATHS_MK): Cargo.toml Cargo.lock $(foreach name,$(CARGO_COMPONENTS),$(COMPONENT_DIR_$(name))/Cargo.toml) build/scripts/wit-paths.sh $(shell find . -name '*.rs' -not -path '*/target/*' -not -path '*/wit/deps/*')
 	@mkdir -p $(@D)
 	@build/scripts/wit-paths.sh $(foreach name,$(CARGO_COMPONENTS),$(CARGO_PACKAGE_$(name))) > $@.tmp
 	@mv $@.tmp $@
