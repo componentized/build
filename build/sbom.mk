@@ -44,15 +44,15 @@ sbom = SOURCE_DATE_EPOCH=$(SBOM_EPOCH) build/scripts/sbom.sh $(1) $(2) $(3) $(4)
 
 define BUILD_SBOM
 
-ifneq ($(or $(wildcard components/$1/wit/$1.constants.wit),$(wildcard components/$1/$1.properties)),)
+ifneq ($(or $(wildcard $(COMPONENT_DIR_$1)/wit/$(COMPONENT_BASE_$1).constants.wit),$(wildcard $(COMPONENT_DIR_$1)/$(COMPONENT_BASE_$1).properties)),)
 
 # a component generated with a cli embeds the cli's code, e.g. the constants cli's
-SBOM_CLI_$1 := $(if $(wildcard components/$1/wit/$1.constants.wit),componentized-constants-cli,componentized-static-config-cli)
+SBOM_CLI_$1 := $(if $(wildcard $(COMPONENT_DIR_$1)/wit/$(COMPONENT_BASE_$1).constants.wit),componentized-constants-cli,componentized-static-config-cli)
 
 ${COMPONENTS_DIR}/$1/$1.cdx.json ${COMPONENTS_DIR}/$1/$1.debug.cdx.json: ${COMPONENTS_DIR}/$1/%.cdx.json: ${COMPONENTS_DIR}/$1/%.wasm build/scripts/sbom.sh
 	$$(call sbom,generated,$$<,$$@,$$(SBOM_CLI_$1) $$(call tool_crate_version,$$(SBOM_CLI_$1)))
 
-else ifneq ($(wildcard components/$1/$1.wac),)
+else ifneq ($(wildcard $(COMPONENT_DIR_$1)/$(COMPONENT_BASE_$1).wac),)
 
 ${COMPONENTS_DIR}/$1/$1.cdx.json: ${COMPONENTS_DIR}/$1/$1.wasm $$(foreach component,$$(WAC_DEPS_$1),$${COMPONENTS_DIR}/$$(component)/$$(component).cdx.json) build/scripts/sbom.sh
 	$$(call sbom,composition,$$<,$$@,$$(foreach component,$$(WAC_DEPS_$1),$${COMPONENTS_DIR}/$$(component)/$$(component).cdx.json))
@@ -60,7 +60,7 @@ ${COMPONENTS_DIR}/$1/$1.cdx.json: ${COMPONENTS_DIR}/$1/$1.wasm $$(foreach compon
 ${COMPONENTS_DIR}/$1/$1.debug.cdx.json: ${COMPONENTS_DIR}/$1/$1.debug.wasm $$(foreach component,$$(WAC_DEPS_$1),$${COMPONENTS_DIR}/$$(component)/$$(component).debug.cdx.json) build/scripts/sbom.sh
 	$$(call sbom,composition,$$<,$$@,$$(foreach component,$$(WAC_DEPS_$1),$${COMPONENTS_DIR}/$$(component)/$$(component).debug.cdx.json))
 
-else ifneq ($(wildcard components/$1/$1.plug),)
+else ifneq ($(wildcard $(COMPONENT_DIR_$1)/$(COMPONENT_BASE_$1).plug),)
 
 ${COMPONENTS_DIR}/$1/$1.cdx.json: ${COMPONENTS_DIR}/$1/$1.wasm $$(foreach component,$$(PLUG_COMPONENTS_$1),$${COMPONENTS_DIR}/$$(component)/$$(component).cdx.json) build/scripts/sbom.sh
 	$$(call sbom,composition,$$<,$$@,$$(foreach component,$$(PLUG_COMPONENTS_$1),$${COMPONENTS_DIR}/$$(component)/$$(component).cdx.json))
@@ -68,23 +68,23 @@ ${COMPONENTS_DIR}/$1/$1.cdx.json: ${COMPONENTS_DIR}/$1/$1.wasm $$(foreach compon
 ${COMPONENTS_DIR}/$1/$1.debug.cdx.json: ${COMPONENTS_DIR}/$1/$1.debug.wasm $$(foreach component,$$(PLUG_COMPONENTS_$1),$${COMPONENTS_DIR}/$$(component)/$$(component).debug.cdx.json) build/scripts/sbom.sh
 	$$(call sbom,composition,$$<,$$@,$$(foreach component,$$(PLUG_COMPONENTS_$1),$${COMPONENTS_DIR}/$$(component)/$$(component).debug.cdx.json))
 
-else ifneq ($(wildcard components/$1/$1.wkg),)
+else ifneq ($(wildcard $(COMPONENT_DIR_$1)/$(COMPONENT_BASE_$1).wkg),)
 
 # the image the release build is pulled from is the first line of the .wkg file, the debug build's
 # the last. cosign verifies the SBOM attested to it, the base of its SBOM.
-${COMPONENTS_DIR}/$1/$1.cdx.json: ${COMPONENTS_DIR}/$1/$1.wasm components/$1/$1.wkg build/scripts/sbom.sh | $(COSIGN_INSTALLED)
-	COSIGN=$(COSIGN) $$(call sbom,oci,$$<,$$@,$$(shell head -1 components/$1/$1.wkg))
+${COMPONENTS_DIR}/$1/$1.cdx.json: ${COMPONENTS_DIR}/$1/$1.wasm $(COMPONENT_DIR_$1)/$(COMPONENT_BASE_$1).wkg build/scripts/sbom.sh | $(COSIGN_INSTALLED)
+	COSIGN=$(COSIGN) $$(call sbom,oci,$$<,$$@,$$(shell head -1 $(COMPONENT_DIR_$1)/$(COMPONENT_BASE_$1).wkg))
 
-${COMPONENTS_DIR}/$1/$1.debug.cdx.json: ${COMPONENTS_DIR}/$1/$1.debug.wasm components/$1/$1.wkg build/scripts/sbom.sh | $(COSIGN_INSTALLED)
-	COSIGN=$(COSIGN) $$(call sbom,oci,$$<,$$@,$$(shell tail -1 components/$1/$1.wkg))
+${COMPONENTS_DIR}/$1/$1.debug.cdx.json: ${COMPONENTS_DIR}/$1/$1.debug.wasm $(COMPONENT_DIR_$1)/$(COMPONENT_BASE_$1).wkg build/scripts/sbom.sh | $(COSIGN_INSTALLED)
+	COSIGN=$(COSIGN) $$(call sbom,oci,$$<,$$@,$$(shell tail -1 $(COMPONENT_DIR_$1)/$(COMPONENT_BASE_$1).wkg))
 
-else ifneq ($(wildcard components/$1/Cargo.toml),)
+else ifneq ($(wildcard $(COMPONENT_DIR_$1)/Cargo.toml),)
 
 # the release and debug builds depend on the same crates. A wasm32-wasip3 component links the
 # wasi-libc of the wasi-sdk sysroot or the one built from WASI_LIBC_VERSION, see build/tools.mk.
 ${COMPONENTS_DIR}/$1/$1.cdx.json ${COMPONENTS_DIR}/$1/$1.debug.cdx.json: ${COMPONENTS_DIR}/$1/%.cdx.json: ${COMPONENTS_DIR}/$1/%.wasm $(CARGO_SBOM_DIR)/$(call component_target,$1).stamp build/scripts/sbom.sh | $(call tool,wasm-tools) $(if $(filter wasm32-wasip3,$(call component_target,$1)),$(WASI_SDK) $(WASI_LIBC))
 	WASM_TOOLS=$(WASM_TOOLS) WASI_SDK_PATH=$(WASI_SDK_PATH) WASI_LIBC_VERSION=$(WASI_LIBC_VERSION) WASI_LIBC_WASI_VERSION=$(WASI_LIBC_WASI_VERSION) \
-		$$(call sbom,cargo,$$<,$$@,$(CARGO_SBOM_DIR)/$(call component_target,$1)/$1.cdx.json $(call component_target,$1))
+		$$(call sbom,cargo,$$<,$$@,$(CARGO_SBOM_DIR)/$(call component_target,$1)/$(CARGO_PACKAGE_$1).cdx.json $(call component_target,$1))
 
 endif
 

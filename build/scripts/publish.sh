@@ -29,6 +29,8 @@
 # REPOSITORY         the repository to publish to, e.g. ghcr.io/componentized/http
 # GITHUB_REPOSITORY  the GitHub repository the components are built from, e.g. componentized/http
 # COMPONENTS_DIR     the directory the components are built into, defaults to target/components
+# COMPONENT_PATH     the directory of the component's sources, e.g. examples/hello, linked from the
+#                    image, defaults to components/<component>
 # SIGN               sign the published components with cosign, `false` to push without signing,
 #                    e.g. to a local registry
 # PUBLISH_LOG        append the published file, its size in bytes and its image to this file, e.g.
@@ -61,6 +63,7 @@ DRY_RUN="${DRY_RUN:-false}"
 
 component="${file%.wasm}"
 component="${component%.debug}"
+COMPONENT_PATH="${COMPONENT_PATH-components/${component}}"
 debug=""
 [[ "$file" == *.debug.wasm ]] && debug=true
 
@@ -90,7 +93,7 @@ commit=$(git rev-parse HEAD)
 revision="$commit"
 git diff --quiet HEAD || revision="${commit}+dirty"
 url="https://github.com/${GITHUB_REPOSITORY}/tree/${commit}"
-[[ -f "components/${component}/README.md" ]] && url="${url}/components/${component}"
+[[ -n "$COMPONENT_PATH" && -f "${COMPONENT_PATH}/README.md" ]] && url="${url}/${COMPONENT_PATH}"
 
 # the version has a leading `v`, the tag does not, whether or not VERSION has one
 component_version="v${VERSION#v}"

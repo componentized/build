@@ -365,12 +365,16 @@ jobs:
                 name="${path#*/}"
                 name="${name//\//-}"
                 # the directory's kind: the interface is a package, a component composed with wac
-                # is a composition, e.g. levels.debug.wasm from components/levels/levels.wac
+                # is a composition, e.g. levels.debug.wasm from components/levels/levels.wac. A
+                # component's files are named for its directory, found by the build, e.g.
+                # examples/hello/hello.wac for example-hello
                 component="${file%.wasm}"
                 component="${component%.debug}"
+                dir=$( make -s "print-COMPONENT_DIR_${component}" )
+                base="${dir##*/}"
                 if [ "${file}" = "interface.wasm" ] ; then
                   kind=package
-                elif [ -f "components/${component}/${component}.wac" ] || [ -f "components/${component}/${component}.plug" ] ; then
+                elif [ -n "${dir}" ] && { [ -f "${dir}/${base}.wac" ] || [ -f "${dir}/${base}.plug" ] ; } ; then
                   kind=composition
                 else
                   kind=component
