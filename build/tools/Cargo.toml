@@ -41,7 +41,7 @@ cosign = ["completion"]
 wasm-tools = ["completion"]
 
 [dependencies]
-cargo-binstall = "=1.27.0"
+cargo-binstall = "=1.28.0"
 cargo-cyclonedx = "=0.5.10"
 componentized-build-cli = "=0.1.6"
 componentized-constants-cli = "=0.2.0"
