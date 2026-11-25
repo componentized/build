@@ -24,7 +24,7 @@ wasmtime-cli = ["wasmtime"]
 wasmtime = ["completion"]
 
 [dependencies]
-wasmtime-cli = "=50.0.1"
+wasmtime-cli = "=51.0.0"
 
 # not a member of the repository's workspace
 [workspace]
